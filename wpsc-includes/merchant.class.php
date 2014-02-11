@@ -156,8 +156,13 @@ class wpsc_merchant {
 
 				case 'billingstate':
 				case 'shippingstate':
-					if ( empty( $address_data[$address_data_set]['state'] ) )
-						$address_data[$address_data_set]['state'] = is_numeric( $collected_form_row['value'] ) ? wpsc_get_state_by_id( $collected_form_row['value'], 'code' ) : $collected_form_row['value'];
+					//error_log($collected_form_row['unique_name'] . ' before = '.$collected_form_row['value']);
+					if ( !empty( $collected_form_row['value'] ) && is_numeric( $collected_form_row['value'] ) )
+						$address_data[$address_data_set][$address_key] = wpsc_get_state_by_id( $collected_form_row['value'], 'code' );
+					else
+						$address_data[$address_data_set][$address_key] = wpsc_get_state_by_name( $collected_form_row['value'], 'code' );
+						
+					//error_log($collected_form_row['unique_name'] . ' after = '.$address_data[$address_data_set][$address_key]);
 					break;
 				default :
 					$address_data[$address_data_set][$address_key] = $collected_form_row['value'];
@@ -165,8 +170,7 @@ class wpsc_merchant {
 			}
 		}
 
-		if ( count( $address_data['shipping'] ) < 1 )
-			$address_data['shipping'] = $address_data['billing'];
+		$address_data['shipping'] = $address_data['billing'];
 		if( !empty($purchase_logs['discount_value']) && $purchase_logs['discount_value'] > 0 )
 			$has_discount = true;
 		else
@@ -193,7 +197,7 @@ class wpsc_merchant {
 			'billing_address'         => $address_data['billing'],
 			'shipping_address'        => $address_data['shipping'],
 		);
-
+		error_log(print_r($this->cart_data, true));
 	}
 
 	/**

@@ -162,7 +162,7 @@ abstract class WPSC_Purchase_Log_Notification {
 			$custom_message_string = apply_filters( 'wpsc_email_product_list_html_custom_message', __( 'Customization for %s', 'wpsc' ) );
 			$output .= '<hr />';
 			$output .= '<p><strong>' . sprintf( $custom_message_string, esc_html( $cart_item->name ) ) . '</strong></p>';
-			$output .= wpautop( esc_html( $cart_item->custom_message ) );
+			$output .= wpautop( $cart_item->custom_message );
 		}
 
 		$links = wpsc_get_downloadable_links( $this->purchase_log );

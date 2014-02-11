@@ -120,7 +120,7 @@ class wpsc_merchant_paypal_standard extends wpsc_merchant {
 		$paypal_vars += array(
 			'business' => get_option( 'paypal_multiple_business' ),
 			'return' => $return_url,
-			'cancel_return' => $this->cart_data['transaction_results_url'],
+			'cancel_return' => $this->cart_data['shopping_cart_url'],
 			'rm' => '2',
 			'currency_code' => $this->get_paypal_currency_code(),
 			'lc' => $this->cart_data['store_currency'],
@@ -339,6 +339,7 @@ class wpsc_merchant_paypal_standard extends wpsc_merchant {
 				);
 			}
 		}
+		//error_log(print_r($paypal_vars, true));
 		return apply_filters( 'wpsc_paypal_standard_post_data', $paypal_vars );
 	}
 
