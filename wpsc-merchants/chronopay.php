@@ -49,8 +49,8 @@ function gateway_chronopay($separator, $sessionid)
     {
     	$data['city'] = $_POST['collected_data'][get_option('chronopay_form_city')];
     }
-    
-    	$data['country'] = (string) wpsc_get_customer_meta( 'billing_country' );
+
+    	$data['country'] = (string) wpsc_get_customer_meta( 'billingcountry' );
 
   	// Change suggested by waxfeet@gmail.com, if email to be sent is not there, dont send an email address
   	$email_data = $wpdb->get_results("SELECT `id`,`type` FROM `".WPSC_TABLE_CHECKOUT_FORMS."` WHERE `type` IN ('email') AND `active` = '1'",ARRAY_A);
@@ -63,9 +63,8 @@ function gateway_chronopay($separator, $sessionid)
     	$data['email'] = $_POST['collected_data'][get_option('email_form_field')];
     }
 
-
 	// Get Currency details abd price
-	$currency_code = $wpdb->get_results("SELECT `code` FROM `".WPSC_TABLE_CURRENCY_LIST."` WHERE `id`='".get_option('currency_type')."' LIMIT 1",ARRAY_A);
+	$currency_code = WPSC_Countries::get_currency_code( get_option( 'currency_type' ) );
 	$local_currency_code = $currency_code[0]['code'];
 	$chronopay_currency_code = get_option('chronopay_curcode');
 

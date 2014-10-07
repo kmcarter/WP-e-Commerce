@@ -58,7 +58,13 @@ var wpsc_refresh_variation_iframe = function() {
 };
 
 (function($) {
+
 	$(function(){
+
+		if ( 'undefined' === typeof WPSC_Term_List_Levels ) {
+			return;
+		}
+
 		var table = $('body.edit-tags-php .wp-list-table');
 		table.find('tbody tr').each(function(){
 			var t = $(this);
@@ -87,6 +93,6 @@ var wpsc_refresh_variation_iframe = function() {
 			sort_order: order,
 			parent_id: 0
 		};
-		jQuery.post(ajaxurl, data);
+		jQuery.post( ajaxurl, data );
 	};
 })(jQuery);

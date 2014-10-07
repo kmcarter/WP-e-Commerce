@@ -1,137 +1,28 @@
-=== WP e-Commerce ===
-Contributors: mufasa, garyc40, JustinSainton
+=== WP eCommerce ===
+Contributors: JustinSainton, mufasa, garyc40
 Donate link: http://getshopped.org
 Tags: e-commerce, wp-e-commerce, shop, cart, paypal, authorize, stock control, ecommerce, shipping, tax
 Requires at least: 3.7
-Tested up to: 3.8
-Stable tag: 3.8.13.3
+Tested up to: 3.9
+Stable tag: 3.9-dev
 
-WP e-Commerce is a free WordPress Shopping Cart Plugin that lets customers buy your products, services and digital downloads online.
+WP eCommerce is a free, powerful plugin that empowers you to sell anything online, quickly and easily.
 
 == Description ==
 
-We make setting up an ecommerce shop easy, and with over 2.7 Million downloads, we have unparalleled experience.
+Since 2006, we've been helping entrepreneurs just like you realize their goal of selling online.  Whether you're hoping to sell digital downloads, physical inventory, or subscriptions and memberships - with WP eCommerce, you're only minutes away from your next sale.
 
-Features:
-
-= WordPress Integration =
-* Easy to install WordPress plugin
-* Works with any standards compliant WordPress theme
-* Plays well with other Plugins
-* Supports regular WordPress widgets, as well as a few snazzy ones of our own
-* Utilizes shortcodes and template tags (just like WordPress)
-* Works out-of-the-box with WordPress Multisite (make sure you use sub-domains with your Multisite setup)
-
-= 100% Customizable =
-* Use your own HTML & CSS and have complete control over the look and feel of your store
-* Easy to modify templates
-
-= Support =
-* Lots of video tutorials
-* Speedy response (through our premium forums)
-* Access to instant support from our community of users
-
-= Payment Gateways Integration =
-* Manual Payment (checks/money orders)
-* PayPal Payments Standard
-* PayPal Payments Pro
-* PayPal Express Checkout
-* Chronopay
-* PayPal Payflow Pro (available with Gold Cart)
-* Authorize.net (available with Gold Cart)
-* FirstData/LinkPoint (available with Gold Cart)
-* eWay Payment (available with Gold Cart)
-* iDEAL (available with Gold Cart)
-* BluePay (available with Gold Cart)
-* DPS (available with Gold Cart)
-* Paystation (available with Gold Cart)
-* SagePay (available with Gold Cart)
-* Need a different gateway?  We have documentation available for developing your own custom payment gateway
-
-= Marketing =
-* Flexible coupon/discount pricing rules
-* Product specific sales
-* Quantity discounts
-* Free shipping options
-* Multi-tier pricing for quantity discounts.
-* Search Engine Friendly URLs
-* New Products widget
-* Cross-sells on product pages
-* Google Sitemap and Google Analytics
-* Uses the popular “Share This” button for easily promoting your products on popular social networking sites
-* Integrates with Google Base
-
-= Search Engine Optimization =
-* 100% Search Engine Friendly
-* Meta-information for products and categories
-* RSS feeds for products and categories
-* Integrates with Google (XML site maps and Google Merchant Centre)
-* Integrates with the All in One SEO plugin for WordPress
-
-= Internationalization Support =
-* Basic support for popular multi-lingual plugins (qTranslate and WPML)
-* Support for multiple currencies
-* Ability to target specific countries
-
-= Shipping =
-* Integrates with UPS, USPS, Australia Post and Shipwire for real-time shipping rates
-* Flexible built-in shipping rate calculators
-* Domestic and global shipping rates
-* Flat rate shipping
-* Table rate shipping
-* Weight rate shipping
-
-= Checkout =
-* SSL security support for orders on both front-end and back-end
-* Checkout without account/Guest Checkout
-* Shopping Cart with tax and shipping estimates
-* Option to create account at beginning of checkout
-* Fully customizable checkout page
-
-= Managing Orders =
-* Admin dashboard for sales overview
-* Export orders and customers into CSV formats
-* Order history with labels for order processing status
-* Email notifications of orders
-* Print invoices and packing slips
-
-= Catalog Management =
-* Single-page product data entry
-* Ability to duplicate products
-* Quickly edit your products from the store front
-* Organize your products with hierarchical categories
-* Batch import/export of catalog
-* Product variation management
-* Downloadable/Digital Products
-* Support for donations
-* Customer Personalized Products
-* Media Manager with automatic image resizing
-* Tax rates per location
-* Basic inventory control
-
-= Catalog Browsing =
-* Cross-sells
-* Product listing in list format
-* Product listing in grid format (available with Gold Cart)
-* Breadcrumbs
-* Product Image Zoom-in Capability
-* Stock Availability
-* Multiple Images Per Product (available with Gold Cart)
-* Product comments
-* Filter by Product Tags
-* New Products widget
-* Features Products widget
-* Live updating shopping cart (put it wherever you want)
-
-= Additional Modules =
-* Gold Cart & Grid Module – adds more options and functionality to your store
-* Drop Shop – an incredibly snazzy way for buyers to add products to their cart, via a simple drag n drop process.
-* Mp3 Audio Player – Preview audio clips on your website
-* NextGen Gallery Buy Now Buttons – turns your NextGen gallery into an ecommerce solution
-* Product Slider – Display your products in a new and fancy way
-* Members Only Module – Create pay to view subscription sites
-
-For more information visit [http://getshopped.org](http://getshopped.org "http://getshopped.org")
+ * Make the plugin your own with CSS and HTML customizations
+ * Learn quickly with our [video tutorials](http://docs.getshopped.org/category/resources/videos/)
+ * Integration with [dozens of different payment gateways](http://getshopped.org/extend/premium-upgrades/)
+ * Integrate with many popular WordPress plugins
+ * Use built-in marketing tools to sell more
+ * Shipping is easy with built in shipping tools and integration with popular couriers
+ * Secure check-out with SSL
+ * Manage your orders and catalogues with powerful built-in tools
+ * Extend your eCommerce site with [additional modules](http://getshopped.org/extend/premium-upgrades/)
+ * Integrate with WordPress multisite
+ * With hundreds of available hooks, developers can make WP eCommerce do anything you can imagine
 
 == Installation ==
 
@@ -145,8 +36,103 @@ After upgrading from earlier versions look for link "Update Store". This will up
 
 == Changelog ==
 
+= 3.8.14.2 =
+
+* Fix: Clear country cache automatically.
+* Fix: Fixed notices when using quick edit.
+* Fix: Fixed html in checkout form.
+* Fix: Fixed shipping results not being displayed.
+* Fix: Does not show errors when deprecated google checkout is used.
+* Fix: Makes sure countries are validated if mandatory.
+* Fix: Makes sure the payment gateway checks for first and last name.
+* Fix: Only output html for shipping error page.
+* Fix: Updated shipping calculator to check for new checkout information and made the calculator more efficient.
+* Fix: USPS shipping now works for servers that don't support curl.
+* Fix: Personalization forms are correctly initialized in database.
+* Fix: Display of products in admin product gallery will display in the order admins want them to.
+* New: Updated Polish and Russian language files.
+* New: Added filter wpsc_uncategorized_product_category to change uncategorized section.
+* New: New hook - wpsc_coupon_add_top and wpsc_coupon_add_bottom for the add coupon section.
+* New: New hook - wpsc_element_is_visible to check and see if an element is visible.
+* Change: Show region on shipping calculator.
+* Change: Billing was accidentally referred to as shipping when billing state and region was a drop down.
+
+= 3.8.14.1 =
+
+* Fix: For users with older (3.7.x and older) templates copied into their theme directory, we inadvertently broke the visibility of the shipping calculator.
+* Fix: Under similar circumstances, taxes would not properly calculate.
+* Fix: Ensured compatibility with the popular "Weight and Destination" shipping module.  Note: You may need to go to your Target Markets and re-save the values there to properly flush the cache for this compatibility.
+* Fix: Edge case where $0.00 could be returned for a shipping rate.
+* Fix: Race condition on AJAX save while submitting purchase.
+* Fix: Restored proper functionality on digital downloads.
+* Fix: Ensure that UPS and USPS always return proper and expected values.  Incrementally improved error handling here.
+* Fix: Ensure that shipping method is properly retained if checkout page is refreshed.
+* Change: Added "County" as the region label for the UK.
+
+= 3.8.14 =
+* Fix: Improved visitor profiles performance, new infrastructure does not use WordPress Users.
+* Fix: When page caching is being used, probability of empty or superfluous visitor profiles being created drastically diminished.
+* Fix: Send appropriate addresses to PayPal via PayPal Standard.
+* Fix: Ensure that sales tax is not added to non-tax items when using a coupon.
+* Fix: Ensure state text field is not visible at the same time as state dropdown.
+* Fix: Ensure shortcodes respect display type as overridden by categories.  Note: Requires latest Gold Cart release.
+* Fix: Ensure that adding a new item to the cart after a coupon code properly reflects that coupon code.
+* Fix: Don't create cron events for unknown schedules.
+* Fix: Shipping options were disappearing when "same as billing address" were selected.
+* Fix: Protect against "Price From: " being zero if a sales price was set without a normal price.
+* Fix: Added programmatic and UX checks for conflict where grid/list view could show products with variations without the variation drop-downs, adding an improper product to the cart.
+* Fix: Improved shipping rate quote retrieval performance.
+* Fix: Sends proper tax amount to PayPal Standard when carts are aggregated.
+* Fix: Fixed pagination bug where improper number of paged links were returned.
+* Fix: Ensure UPS Environment test mode works.
+* Fix: Downloadable products were not being properly added as attachments.
+* Fix: "Shipping Same as Billing" could cause products to be shipped to countries which are not allowed.
+* Fix: Eliminate undefined index errors on sales log page when checkout fields are removed.
+* Fix: Address edge case where purchase notifications are not sent when there are multiple email fields in different checkout form sets.
+* Fix: Improved bbPress compatibility.
+* Fix: Ensure User Account pages are properly overridable in the template stack.
+* Fix: Properly escape classes for Buy Now button classes.
+* Fix: Fix IE8 javascript conflicts.
+* Fix: Shored up backwards compatibility for Session usage
+* Fix: Ensure cart items with variations that are out of stock (and stock limited) don't return a fatal error.
+* Fix: Address malformed XML output for shipping quotes from UPS and USPS.
+* Fix: Ensure PayPal Express does not show coupons as an empty line item when discounts are not used.
+* Fix: A redirection error on our wpsc_scale_image fallback was resolved.
+* Fix: Ensure only available countries are shown as available in PayPal Express.
+* Fix: Resolved issue whereby amounts over 1,000 (in a given currency) would be incorrectly sent to Google Analytics.
+* Fix: Shipping calculator uses information set in user account profile, if set.
+* Fix: When PATHINFO Permalinks ("Almost Pretty"), product pages would 404.
+* Fix: Ensure 3.7.x -> 3.8.x upgrade routine uses wpdb::prepare() properly.
+* New: AJAX API to get and set information about customers.
+* New: Visitor API to get and set information about current and past visits.
+* New: Introduced WPSC_Claimed_Stock class.
+* New: Introduced WPSC_Stats class.
+* New: Introduced WPSC_Product/WPSC_Products class.
+* New: Introduced WPSC_Countries / WPSC_Region class.
+* New: Totally revamped product editing and adding user interface.
+* New: Added new Purchase Meta API.
+* New: Some compatibility fixes for WordPress 3.9.
+* New: Improved extendibility of the Import Settings area.
+* New: Improved extendibility for our conditional coupon callbacks.
+* Change: Iterated upon WPSC_Country class.
+* Change: Improved UK Country Display.
+* Change: Improved upgrade routines for currencies and countries.
+* Change: Introduced filter for themeable packing slips.
+* Change: Modified calculation for total price to ensure coupons don't reduce shipping and tax.
+* Change: Improved Checkout workflow and UI.
+* Change: Fully remove Google Checkout from WP eCommerce, as it has been deprecated.
+* Change: Don't show transaction results to anyone but the purchaser
+* Change: Eliminated usage of dynamic CSS and javascript in front-end and admin.
+* Change: Couldn't use decimals in product's variation sale price.
+* Change: Tons of performance improvements to USPS and UPS.
+* Change: Add condition as parameter to wpsc_coupon_rule_property_options action.
+* Change: Improved security for our customer cookie hash.
+* Change: Don't default to base country of store in checkout fields.
+* Change: Taxes class previously regarded regions as unique, when they are not. We now check both region and country where applicable.
+* Change: By default, quantity boxes will be shown by default on new installs.
+
 = 3.8.13.3 =
-* Fix: Users disappear in Network Admin -> Users page (for multisite)
+* Fix: Users disappear in Network Admin -> Users page (for multisite).
 * Fix: User counts are incorrect when there are thousands separators.
 * Fix: "Save Product Files" button doesn't like being clicked on.
 
@@ -209,7 +195,7 @@ After upgrading from earlier versions look for link "Update Store". This will up
 * Change: Remove nusoap
 * Change: Improvements to Marketing admin panel
 * Change: Improvements to Products List Admin Page
-* Fix: WP e-Commerce pagination breaks WordPress pagination
+* Fix: WP eCommerce pagination breaks WordPress pagination
 * Fix: Wrong thumbnail size in Product Specials widget
 * Fix: Filtering by a category also shows all products in subcategories
 * Fix: admin.js throwing a Parse Error in Safari
@@ -380,7 +366,7 @@ After upgrading from earlier versions look for link "Update Store". This will up
 * Change: Default checkout shipping option to lowest shipping cost of all choices.
 * Fix: "Variation Controls" anchor in metabox leads nowhere.
 * Fix: AJAX code audit (security)
-* Fix: Activating WP e-Commerce on a vanilla WordPress installation with pretty permalinks enabled messes up the rewrite rules.
+* Fix: Activating WP eCommerce on a vanilla WordPress installation with pretty permalinks enabled messes up the rewrite rules.
 * Fix: Add a space after tilde character to avoid confusion in admin product list.
 * Fix: Add new variation sets and terms from Edit Product page doesn't work properly.
 * Fix: Additional description is double escaped in product edit page.
@@ -577,7 +563,7 @@ After upgrading from earlier versions look for link "Update Store". This will up
 * Fix: Fatal error when trying to include a non-existent admin file.
 * Fix: Hide Google Feed information from display
 * Fix: Incompatibility with Genesis framework in Product Edit page.
-* Fix: Make the WP e-Commerce 3.8.x activation/installation routine much more efficient.
+* Fix: Make the WP eCommerce 3.8.x activation/installation routine much more efficient.
 * Fix: Mandatory fields in user_log_functions.php are not properly validated.
 * Fix: Memory improvement for productfeed.
 * Fix: Purchase logs have incorrect time if a timezone is specified in Settings->General.
@@ -723,11 +709,44 @@ After upgrading from earlier versions look for link "Update Store". This will up
 
 == Frequently Asked Questions ==
 
-= How do I customize WP e-Commerce =
+= How do I customize WP eCommerce =
 
-First of all you should check out the Presentation settings which are in the Settings->Store page.
+First of all, you should check out the Presentation settings which are in the Settings -> Store page.
 
-Advanced users can edit the CSS (and do just about anything). Not so advanced users can hire WP consultants developers and designers from [http://getshopped.org/resources/wp-consultants/](http://getshopped.org/resources/wp-consultants/ "http://getshopped.org/resources/wp-consultants/").
+For advanced users, all of our eCommerce templates and CSS can be moved into your active theme folder for customization. Less advanced users have [several fantastic WP eCommerce consultants](http://getshopped.org/resources/wp-consultants/) to get help from.
+
+= What payment gateways does WP eCommerce integrate with? =
+
+Our [Gold Cart plugin](http://getshopped.org/premium-upgrades/premium-plugin/gold-cart-plugin/) contains nearly a dozen payment gateway options, including Authorize.net, LinkPoint and DPS.  Our [Mirijeh integration plugin](http://getshopped.org/premium-upgrades/payment-gateways/mijireh-99-payment-gateways-pack-wp-e-commerce/) provides access to nearly one hundred different gateway options.  Beyond that, we have individual integration plugins for [Braintree](http://getshopped.org/premium-upgrades/payment-gateways/braintree-payment-gateway/), [Stripe](http://getshopped.org/premium-upgrades/payment-gateways/stripe-payment-gateway-wp-e-commerce/), [Authorize.net SIM](http://getshopped.org/premium-upgrades/premium-plugin/authorize-net-sim-payment-gateway-for-wordpress/) and more.
+
+= I want to integrate a payment gateway that you don't support. Can you help with that? =
+
+Absolutely!  We have a [growing list of trusted consultants](http://getshopped.org/consultant/) who would be happy to partner with you to build a custom gateway.  Alternatively, you're more than welcome to request that we build it as a plugin or part of our core plugin.  The more requests we get, the more likely we are to build it.  If you happen to be a talented developer, we have a great documentation site with helpful information on building payment gateways
+
+= Which couriers does the plugin integrate with? =
+
+We have table rate, weight rate and flat rate shipping calculators.
+
+We also currently integrate with UPS, USPS, Australia Post and Shipwire for real-time shipping rates.  We have a premium plugin for [FedEx](http://getshopped.org/premium-upgrades/premium-plugin/fedex-shipping-plugin-wordpress/) as well.
+
+= Which multi-lingual plugins is WP eCommerce compatible with? =
+
+We currently provide basic support for WPML and qTranslate.  We're excited about an up-and-coming multi-lingual project called [Babble](https://github.com/cftp/babble).  We intend to fully and canonically support Babble as our primary multi-lingual partner in releases to come.
+
+= Which additional modules are available for use with WP eCommerce? =
+
+* [Gold Cart](http://getshopped.org/premium-upgrades/premium-plugin/gold-cart-plugin/) - adds more options, gateways and functionality to your store
+* [Drop Shop](http://getshopped.org/premium-upgrades/premium-plugin/dropshop-2010/) - an incredibly snazzy way for buyers to add products to their cart, via a simple drag n drop process.
+* [MP3 Audio Player](http://getshopped.org/premium-upgrades/premium-plugin/mp3-player-plugin-wordpress/) - Preview audio clips on your website
+* [NextGen Gallery Buy Now Buttons](http://getshopped.org/premium-upgrades/premium-plugin/nextgen-gallery-buy-now-buttons-wordpress-stores/) - turns your NextGen gallery into an eCommerce solution
+* [Product Slider](http://getshopped.org/premium-upgrades/premium-plugin/product-slider-image-carousel-wordpress/) - Display your products in a new and fancy way
+* [Members Plugin](http://getshopped.org/premium-upgrades/premium-plugin/product-slider-image-carousel-wordpress/) - Integrates with PayPal Standard and Authorize.Net, allows you to create a Subscription-Based Product, as well as a "Members-Only" website with paid access to restricted content.
+
+= How do you provide support? =
+
+For users who have purchased a premium plugin from us (or a have purchased a [premium support token](http://getshopped.org/premium-upgrades/exclude-marketplace/premium-support-token/)), we offer high-touch, 1-on-1 support from our trained support staff.  If you submit a support request here, you'll get a helpful response within 24 hours or less (during business hours).
+
+For the rest of our users, we do our best to monitor the WordPress.org support forums and respond in as timely a manner as we are able.  We appreciate the countless helpful volunteers who also take time to respond to forum posts here.
 
 == Screenshots ==
 

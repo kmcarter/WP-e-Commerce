@@ -57,13 +57,15 @@ class WPSC_Update {
 	}
 
 	public function run( $function, $message = '' ) {
-		if ( $message )
+
+		if ( $message ) {
 			echo "<p>{$message}</p>";
+		}
 
 		if ( empty( $this->stages[$function] ) ) {
 			call_user_func( 'wpsc_' . $function );
-			$this->stages[$function] = true;
-			set_transient( 'wpsc_update_progress', $this->stages, 604800 );
+			$this->stages[ $function ] = true;
+			set_transient( 'wpsc_update_progress', $this->stages, WEEK_IN_SECONDS );
 		}
 	}
 }
@@ -116,7 +118,8 @@ class WPSC_Update_Progress {
 
 	private function print_eta() {
 		echo '<div class="eta">';
-		_e( 'Estimated time left:', 'wpsc' ) . ' ';
+		_e( 'Estimated time left:', 'wpsc' );
+		echo ' ';
 		if ( $this->eta == 0 )
 			_e( 'Under a minute', 'wpsc' );
 		else
@@ -180,7 +183,8 @@ function wpsc_update_step( $i, $total ) {
 		$processed = $i - $count + 1;
 		$eta = floor( ( $total - $i ) * ( $now - $start ) / ( $processed * 60 ) );
 		echo '<div class="eta">';
-		_e( 'Estimated time left:', 'wpsc' ) . ' ';
+		_e( 'Estimated time left:', 'wpsc' );
+		echo ' ';
 		if ( $eta == 0 )
 			_e( 'Under a minute', 'wpsc' );
 		else
@@ -421,7 +425,7 @@ function wpsc_convert_products_to_posts() {
 				$product['order'] = $wpdb->get_var( $wpdb->prepare( "
 					SELECT order FROM " . WPSC_TABLE_PRODUCT_ORDER . "
 					WHERE product_id = %d
-				" ), $product['id'] );
+				", $product['id'] ) );
 
 				$product_post_values['menu_order'] = $product['order'];
 
@@ -442,7 +446,7 @@ function wpsc_convert_products_to_posts() {
 				WHERE `product_id` = %d
 				AND `meta_value` != ''", $product['id'] );
 
-			$product_meta = $wpdb->get_results( $product_meta_sql, ARRAY_A);
+			$product_meta = $wpdb->get_results( $product_meta_sql, ARRAY_A );
 
 			$post_data = array();
 
@@ -861,8 +865,8 @@ function wpsc_update_database() {
 		$has_taxes = ($value["Field"] == "wpec_taxes_total" || $value["Field"] == "wpec_taxes_rate") ? true: false;
 	}
 	if (!$has_taxes) {
-		$add_fields = $wpdb->query($wpdb->prepare("ALTER TABLE ".WPSC_TABLE_PURCHASE_LOGS." ADD wpec_taxes_total decimal(11,2)"));
-		$add_fields = $wpdb->query($wpdb->prepare("ALTER TABLE ".WPSC_TABLE_PURCHASE_LOGS." ADD wpec_taxes_rate decimal(11,2)"));
+		$add_fields = $wpdb->query( "ALTER TABLE ".WPSC_TABLE_PURCHASE_LOGS." ADD wpec_taxes_total decimal(11,2)" );
+		$add_fields = $wpdb->query( "ALTER TABLE ".WPSC_TABLE_PURCHASE_LOGS." ADD wpec_taxes_rate decimal(11,2)" );
 	}
 }
 /*

@@ -20,6 +20,9 @@ class WPSC_Purchase_Log_List_Table extends WP_List_Table {
 
 	public function __construct( $args = array() ) {
 		$args['plural'] = 'purchase-logs';
+
+		$this->set_per_page( $this->set_purchase_logs_per_page_by_user() );
+
 		parent::__construct( $args );
 
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX )
@@ -46,6 +49,24 @@ class WPSC_Purchase_Log_List_Table extends WP_List_Table {
 		$this->views = false;
 	}
 
+	// Get the purchase logs per page (per user) or return the default
+	// based on http://chrismarslender.com/2012/01/26/wordpress-screen-options-tutorial/
+	private function set_purchase_logs_per_page_by_user() {
+
+		$user = get_current_user_id();
+		$screen = get_current_screen();
+		$option = $screen->get_option( 'per_page', 'option' );
+
+		$per_page = get_user_meta( $user, 'wpsc_purchases_per_page', true );
+		if ( empty ( $per_page ) || $per_page < 1 ) {
+
+			$per_page = 20;
+		}
+
+		return $per_page;
+	}
+
+	// Override the default Purchase Logs Per Page
 	public function set_per_page( $per_page ) {
 		$this->per_page = (int) $per_page;
 	}
@@ -78,20 +99,28 @@ class WPSC_Purchase_Log_List_Table extends WP_List_Table {
 			) AS item_count';
 
 		$search_terms = empty( $_REQUEST['s'] ) ? array() : explode( ' ', $_REQUEST['s'] );
-		$search_sql = array();
+		$search_sql   = array();
+
 		foreach ( $checkout_fields as $field ) {
-			$table_as = 's' . $i;
+			$table_as  = 's' . $i;
 			$select_as = str_replace('billing', '', $field->unique_name );
 			$selects[] = $table_as . '.value AS ' . $select_as;
-			$joins[] = $wpdb->prepare( "LEFT OUTER JOIN " . WPSC_TABLE_SUBMITTED_FORM_DATA . " AS {$table_as} ON {$table_as}.log_id = p.id AND {$table_as}.form_id = %d", $field->id );
+			$joins[]   = $wpdb->prepare( "LEFT OUTER JOIN " . WPSC_TABLE_SUBMITTED_FORM_DATA . " AS {$table_as} ON {$table_as}.log_id = p.id AND {$table_as}.form_id = %d", $field->id );
 
 			// build search term queries for first name, last name, email
 			foreach ( $search_terms as $term ) {
-				$escaped_term = esc_sql( like_escape( $term ) );
-				if ( ! array_key_exists( $term, $search_sql ) )
-					$search_sql[$term] = array();
 
-				$search_sql[$term][] = $table_as . ".value LIKE '%" . $escaped_term . "%'";
+				if ( version_compare( $GLOBALS['wp_version'], '4.0', '>=' ) ) {
+					$escaped_term = esc_sql( like_escape( $term ) );
+				} else {
+					$escaped_term = esc_sql( $wpdb->esc_like( $term ) );
+				}
+
+				if ( ! array_key_exists( $term, $search_sql ) ) {
+					$search_sql[ $term ] = array();
+				}
+
+				$search_sql[ $term ][] = $table_as . ".value LIKE '%" . $escaped_term . "%'";
 			}
 
 			$i++;
@@ -99,10 +128,10 @@ class WPSC_Purchase_Log_List_Table extends WP_List_Table {
 
 		// combine query phrases into a single query string
 		foreach ( $search_terms as $term ) {
-			$search_sql[$term][] = "p.track_id = '" . esc_sql( $term ) . "'";
+			$search_sql[ $term ][] = "p.track_id = '" . esc_sql( $term ) . "'";
 			if ( is_numeric( $term ) )
-				$search_sql[$term][] = 'p.id = ' . esc_sql( $term );
-			$search_sql[$term] = '(' . implode( ' OR ', $search_sql[$term] ) . ')';
+				$search_sql[ $term ][] = 'p.id = ' . esc_sql( $term );
+			$search_sql[ $term ] = '(' . implode( ' OR ', $search_sql[ $term ] ) . ')';
 		}
 		$search_sql = implode( ' AND ', array_values( $search_sql ) );
 
@@ -159,6 +188,7 @@ class WPSC_Purchase_Log_List_Table extends WP_List_Table {
 		}
 
 		$total_where = apply_filters( 'wpsc_manage_purchase_logs_total_where', $this->where );
+
 		if ( $this->status == 'all' ) {
 			$total_where .= ' AND p.processed IN (2, 3, 4) ';
 		}
@@ -414,11 +444,32 @@ class WPSC_Purchase_Log_List_Table extends WP_List_Table {
 	}
 
 	public function column_customer( $item ) {
-		?>
+
+		$name = '';
+
+		if ( isset( $item->firstname ) ) {
+			$name .= $item->firstname;
+		}
+
+		if ( isset( $item->lastname ) ) {
+			$name .= ' ' . $item->lastname;
+		}
+
+		$name = trim( $name );
+
+		if ( empty( $name ) ) {
+			$name = apply_filters( 'wpsc_purchase_log_list_no_name', __( 'No name provided', 'wpsc' ), $item );
+		}
+
+
+	?>
 		<strong>
-			<a class="row-title" href="<?php echo esc_url( $this->item_url( $item ) ); ?>" title="<?php esc_attr_e( 'View order details', 'wpsc' ) ?>"><?php echo esc_html( $item->firstname . ' ' . $item->lastname ); ?></a>
+			<a class="row-title" href="<?php echo esc_url( $this->item_url( $item ) ); ?>" title="<?php esc_attr_e( 'View order details', 'wpsc' ) ?>"><?php echo esc_html( $name ); ?></a>
 		</strong><br />
-		<small><?php echo make_clickable( $item->email ); ?></small>
+
+		<?php if ( isset( $item->email ) ) : ?>
+			<small><?php echo make_clickable( $item->email ); ?></small>
+		<?php endif; ?>
 		<?php
 	}
 

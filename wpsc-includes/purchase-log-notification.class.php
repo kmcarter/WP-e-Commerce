@@ -45,12 +45,12 @@ abstract class WPSC_Purchase_Log_Notification {
 			'discount'        => sprintf( __( 'Discount Amount: %s (%s)', 'wpsc' ), $discount, $this->purchase_log->get( 'discount_data' ) ) . "\r\n",
 
 			// New tags
-			'coupon_code'     => $this->purchase_log->get( 'discount_data'        ),
-			'transaction_id'  => $this->purchase_log->get( 'transactid'           ),
-			'purchase_log_id' => $this->purchase_log->get( 'id'                   ),
-			'payment_method'  => $this->purchase_log->get( 'gateway_name'         ),
-			'shipping_method' => $this->purchase_log->get( 'shipping_method_name' ),
-			'shipping_option' => $this->purchase_log->get( 'shipping_option_name' ),
+			'coupon_code'     => $this->purchase_log->get( 'discount_data'   ),
+			'transaction_id'  => $this->purchase_log->get( 'transactid'      ),
+			'purchase_log_id' => $this->purchase_log->get( 'id'              ),
+			'payment_method'  => $this->purchase_log->get( 'gateway_name'    ),
+			'shipping_method' => $this->purchase_log->get( 'shipping_method' ),
+			'shipping_option' => $this->purchase_log->get( 'shipping_option' ),
 			'discount_amount' => $discount,
 			'tax'             => $tax,
 			'shipping'        => $shipping,
@@ -104,7 +104,8 @@ abstract class WPSC_Purchase_Log_Notification {
 			$item_total = wpsc_currency_display( $item_total , array( 'display_as_html' => false ) );
 			$item_price = wpsc_currency_display( $item->price, array( 'display_as_html' => false ) );
 			$item_name  = apply_filters( 'the_title', $item->name );
-			$rows[]     = array( $item->name, $item_price, $item->quantity, $item_total );
+
+			$rows[]     = array( $item_name, $item_price, $item->quantity, $item_total );
 		}
 
 		// Preserve the 'wpsc_transaction_result_content' filter for backward compat
@@ -268,13 +269,21 @@ abstract class WPSC_Purchase_Log_Notification {
 		return apply_filters( 'wpsc_purchase_log_notification_headers', $headers, $this );
 	}
 
-	public function send() {
-		if ( empty( $this->address ) )
-			return;
+	public function get_attachments() {
+		return apply_filters( 'wpsc_purchase_log_notification_attachments', array(), $this );
+	}
 
-		$headers = $this->get_email_headers();
+	public function send() {
+
+		if ( empty( $this->address ) ) {
+			return;
+		}
+
+		$headers     = $this->get_email_headers();
+		$attachments = $this->get_attachments();
+
 		add_action( 'phpmailer_init', array( $this, '_action_phpmailer_init_multipart' ), 10, 1 );
-		$email_sent = wp_mail( $this->address, $this->title, $this->html_message, $headers );
+		$email_sent = wp_mail( $this->address, $this->title, $this->html_message, $headers, $attachments );
 		remove_action( 'phpmailer_init', array( $this, '_action_phpmailer_init_multipart' ), 10, 1 );
 
 		return $email_sent;
@@ -352,8 +361,6 @@ class WPSC_Purchase_Log_Admin_Notification extends WPSC_Purchase_Log_Notificatio
 			$data[$type]['fields'][] = $field;
 		}
 
-		$message = '';
-
 		// Transaction details
 		$message = '<strong>' . __( 'Transaction Details', 'wpsc' ) . "</strong>\r\n";
 		$message .= __( 'Sale Log ID', 'wpsc' ) . ': %purchase_id%' . "\r\n";
@@ -393,8 +400,7 @@ class WPSC_Purchase_Log_Admin_Notification extends WPSC_Purchase_Log_Notificatio
 			$message .= "<strong>{$section['title']}</strong>\r\n";
 			foreach ( $section['fields'] as $field ) {
 				if ( strpos( $field->unique_name, 'state' ) && is_numeric( $field->value ) ) {
-					$sql = $wpdb->prepare( "SELECT name FROM " . WPSC_TABLE_REGION_TAX . " WHERE id = %d", $field->value );
-					$field->value = $wpdb->get_var( $sql );
+					$field->value = wpsc_get_region( $field->value );
 				}
 				$message .= $field->name . ' : ' . $field->value . "\r\n";
 			}

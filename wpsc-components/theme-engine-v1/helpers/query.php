@@ -14,6 +14,8 @@ if ( is_ssl() ) {
 add_filter( 'wp_nav_menu_args', 'wpsc_switch_the_query', 99 );
 add_filter( 'request', 'wpsc_filter_query_request' );
 add_filter( 'pre_get_posts', 'wpsc_split_the_query', 8 );
+ // Prevent later hooks from being skipped. See #1444.
+add_filter( 'pre_get_posts', '__return_null', 8 );
 add_filter( 'parse_query', 'wpsc_mark_product_query', 12 );
 add_filter( 'query_vars', 'wpsc_query_vars' );
 
@@ -159,7 +161,7 @@ function _wpsc_pre_get_posts_reset_taxonomy_globals( $query ) {
 	$post_type_object = get_post_type_object( 'wpsc-product' );
 
 	if ( current_user_can( $post_type_object->cap->edit_posts ) )
-		$query->set( 'post_status', 'private,draft,pending,publish' );
+		$query->set( 'post_status', apply_filters( 'wpsc_product_display_status', array( 'publish' ) ) );
 	else
 		$query->set( 'post_status', 'publish' );
 }
@@ -170,7 +172,7 @@ function _wpsc_pre_get_posts_reset_taxonomy_globals( $query ) {
 function wpsc_start_the_query() {
 	global $wpsc_page_titles, $wp_query, $wpsc_query, $wpsc_query_vars;
 
-	$is_404 = false;
+	$is_404 = $wp_query->is_404;
 	if ( null == $wpsc_query ) {
 		if( ( $wp_query->is_404 && !empty($wp_query->query_vars['paged']) ) || (isset( $wp_query->query['pagename']) && strpos( $wp_query->query['pagename'] , $wpsc_page_titles['products'] ) !== false ) && !isset($wp_query->post)){
 			global $post;
@@ -178,7 +180,7 @@ function wpsc_start_the_query() {
 			if( !isset( $wp_query->query_vars['wpsc_product_category'] ) && ! isset( $wp_query->query_vars['product_tag'] ) )
 				$wp_query = new WP_Query('post_type=wpsc-product&name='.$wp_query->query_vars['name']);
 
-			if(isset($wp_query->post->ID))
+			if(  isset( $wp_query->post ) && is_object( $wp_query->post ) && isset($wp_query->post->ID))
 				$post = $wp_query->post;
 			else
 				$wpsc_query_vars['wpsc_product_category'] = $wp_query->query_vars['name'];
@@ -254,7 +256,7 @@ function wpsc_start_the_query() {
 			$wp_query = new WP_Query( 'page_id='.$product_page_id);
 		}
 	}
-	if ( isset( $wp_query->post->ID ) )
+	if ( isset( $wp_query->post ) && is_object( $wp_query->post ) && isset( $wp_query->post->ID ) )
 		$post_id = $wp_query->post->ID;
 	else
 		$post_id = 0;

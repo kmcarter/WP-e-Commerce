@@ -1,6 +1,6 @@
 <?php
 /**
- * WP e-Commerce Settings Page API.
+ * WP eCommerce Settings Page API.
  *
  * Third-party plugin / theme developers can add their own tabs to WPEC store settings page.
  *
@@ -579,6 +579,12 @@ final class WPSC_Settings_Page {
 			else
 				update_option( 'wpsc_ga_tracking_id', '' );
 
+			if ( isset( $_POST['wpsc_ga_use_universal'] ) && $_POST['wpsc_ga_use_universal'] == '1' ) {
+				update_option( 'wpsc_ga_use_universal', 1 );
+			} else {
+				update_option( 'wpsc_ga_use_universal', 0 );
+			}
+
 		}
 
 		if (empty($_POST['countrylist2']) && !empty($_POST['wpsc_options']['currency_sign_location']))
@@ -635,6 +641,9 @@ final class WPSC_Settings_Page {
 					    );
 				}
 			}
+
+			WPSC_Countries::clear_cache();
+			wpsc_core_flush_temporary_data();
 		}
 		$previous_currency = get_option( 'currency_type' );
 

@@ -6,15 +6,16 @@ class wpec_taxes {
 	 * WPEC Taxes Options - any of these can be retrieved by get_option
 	 *
 	 * @var array
-	 * */
+	 *
+	 **/
 	private $taxes_options = array(
-		'wpec_taxes_enabled' => 0,
-		'wpec_taxes_inprice' => 'exclusive',
-		'wpec_taxes_product' => 'add',
-		'wpec_taxes_logic' => 'billing_shipping',
+		'wpec_taxes_enabled'               => 0,
+		'wpec_taxes_inprice'               => 'exclusive',
+		'wpec_taxes_product'               => 'add',
+		'wpec_taxes_logic'                 => 'billing_shipping',
 		'wpec_billing_shipping_preference' => 'billing_address',
-		'wpec_taxes_rates' => '',
-		'wpec_taxes_bands' => ''
+		'wpec_taxes_rates'                 => '',
+		'wpec_taxes_bands'                 => '',
 	);
 
 	function __construct() {
@@ -63,15 +64,18 @@ class wpec_taxes {
 	 * @return: null
 	 * */
 	function wpec_taxes_set_options() {
-		foreach ( array_keys( $this->taxes_options ) as $key ) {
-			$options[$key] = get_option( $key );
-		}// foreach
+
+		$options = array();
+
+		foreach ($this->taxes_options as $key => $value ) {
+			$options[ $key ] = get_option( $key );
+		}
 
 		$returnable = wp_parse_args( $options, $this->taxes_options );
 		extract( $returnable, EXTR_SKIP );
 
 		$this->taxes_options = $returnable;
-	} // wpec_taxes_set_options
+	}
 
 	/**
 	 * @description: wpec_taxes_get_rate - retrieves the tax rate for the given country
@@ -81,7 +85,7 @@ class wpec_taxes {
 	 * @param: region_code (optional) - the region code for the region tax rate you wish to retrieve.
 	 * @return: array or false
 	 * */
-	function wpec_taxes_get_rate( $country_code, $region_code='' ) {
+	function wpec_taxes_get_rate( $country_code, $region_code = '' ) {
 		//initialize return variable
 		// use wpsc_tax_rate hook to provide your own tax solution
 		$returnable = apply_filters( 'wpsc_tax_rate', false, $this, $country_code, $region_code );
@@ -89,34 +93,33 @@ class wpec_taxes {
 		if ( $returnable !== false )
 			return $returnable;
 
+		$country = new WPSC_Country( $country_code );
+
 		//first check if the region given is part of the country
-		if ( !empty( $region_code ) ) {
-			$region_country_id = $this->wpec_taxes_get_region_information( $region_code, 'country_id' );
-			$region_country_code = $this->wpec_taxes_get_country_information( 'isocode', array( 'id' => $region_country_id ) );
-			if ( $region_country_code != $country_code ) {
+		if ( ! empty( $region_code ) ) {
+			$region = $country->get_region( $region_code );
+			if ( ! $region ) {
 				//reset region code if region provided not in country provided
 				$region_code = '';
 			}// if
 		}// if
 
-		if ( !empty( $this->taxes_options['wpec_taxes_rates'] ) ) {
+		if ( ! empty( $this->taxes_options['wpec_taxes_rates'] ) ) {
 			foreach ( $this->taxes_options['wpec_taxes_rates'] as $tax_rate ) {
 				//if there is a tax rate defined for all markets use this one unless it's overwritten
-				if('all-markets' == $tax_rate['country_code'])
-				{
+				if ( 'all-markets' == $tax_rate['country_code'] ) {
 					$returnable = $tax_rate;
 				}// if
 
 				//if there is a specific tax rate for the given country use it
 				if ( $tax_rate['country_code'] == $country_code ) {
 					//if there is a tax rate defined for all regions use it, unless it's overwritten
-					if('all-markets' == $tax_rate['region_code'])
-					{
+					if ( 'all-markets' == $tax_rate['region_code'] ) {
 						$returnable = $tax_rate;
 					}
 
 					//if there is a specific tax rate for the given region then use it.
-					if ( ($region_code == '' && !isset( $tax_rate['region_code'] )) || $region_code == $tax_rate['region_code'] ) {
+					if ( ($region_code == '' && ! isset( $tax_rate['region_code'] )) || $region_code == $tax_rate['region_code'] ) {
 						$returnable = $tax_rate;
 						break;
 					}// if
@@ -138,7 +141,7 @@ class wpec_taxes {
 		$returnable = false;
 
 		//search bands for name
-		if ( !empty( $this->taxes_options['wpec_taxes_bands'] ) ) {
+		if ( ! empty( $this->taxes_options['wpec_taxes_bands'] ) ) {
 			foreach ( $this->taxes_options['wpec_taxes_bands'] as $tax_band ) {
 				if ( $tax_band['name'] == $name ) {
 					$returnable = $tax_band;
@@ -161,7 +164,7 @@ class wpec_taxes {
 		$returnable = false;
 
 		//search bands for index
-		if ( !empty( $this->taxes_options['wpec_taxes_bands'] ) ) {
+		if ( ! empty( $this->taxes_options['wpec_taxes_bands'] ) ) {
 			foreach ( $this->taxes_options['wpec_taxes_bands'] as $tax_band ) {
 				if ( $tax_band['index'] == $index ) {
 					$returnable = $tax_band;
@@ -183,13 +186,13 @@ class wpec_taxes {
 	 * @param: region_code(optional) - the code code for the region that you wish to retrieve a
 	 *         percentage rate for
 	 * */
-	function wpec_taxes_get_included_rate( $taxes_band_index, $country_code, $region_code='' ) {
+	function wpec_taxes_get_included_rate( $taxes_band_index, $country_code, $region_code = '' ) {
 		//get the tax band and tax rate
 		$tax_band = $this->wpec_taxes_get_band_from_index( $taxes_band_index );
 		$rate_array = $this->wpec_taxes_get_rate( $country_code, $region_code );
 
 		//set the tax rate depending on product rate settings
-		if(isset($tax_band['rate']))
+		if ( isset( $tax_band['rate'] ) ) {
 			switch ( $this->wpec_taxes_get_product() ) {
 				case 'add':
 					$tax_rate = $rate_array['rate'] + $tax_band['rate'];
@@ -199,10 +202,13 @@ class wpec_taxes {
 						$tax_rate = $tax_band['rate'];
 					break;
 			}// switch
-		else
+		} else {
 			$tax_rate = $rate_array['rate'];
+		}
+
 		//return tax for this item
 		return $tax_rate;
+
 	} // wpec_taxes_get_included_rate
 
 	/**
@@ -213,19 +219,19 @@ class wpec_taxes {
 	 *                                 is to retrieve any country.
 	 * @return: array or false
 	 * */
-	function wpec_taxes_get_countries( $visibility='any' ) {
+	function wpec_taxes_get_countries( $visibility = 'any' ) {
 		switch ( $visibility ) {
 			case 'visible': $where = array( 'visible' => 1 );
 				break;
 			case 'hidden': $where = array( 'visible' => 0 );
 				break;
-			default: $where = false;
+			default: $where = array();
 		}// switch
 
 		$returnable = $this->wpec_taxes_get_country_information( array( 'country', 'isocode' ), $where, 'country' );
 
 		//add all markets
-		array_unshift($returnable, array('isocode'=>'all-markets', 'country'=>'All Markets'));
+		array_unshift( $returnable, array( 'isocode' => 'all-markets', 'country' => __( 'All Markets', 'wpsc' ) ) );
 
 		return $returnable;
 	} // wpec_taxes_get_countries
@@ -246,14 +252,11 @@ class wpec_taxes {
 	 *                              Default action is to not include an order by statement.
 	 * @return: array, int, string or false
 	 * */
-	function wpec_taxes_get_country_information( $columns = false, $where = false, $order_by = false ) {
+	function wpec_taxes_get_country_information( $columns = false, $where = array(), $order_by = false ) {
 		//check for all-markets
-		if( 'country' == $columns && 1 == count( $where ) && 'all-markets' == $where['isocode'] )
-		{
+		if ( 'country' == $columns && 1 == count( $where ) && 'all-markets' == $where['isocode'] ) {
 			$returnable = 'All Markets';
-		}
-		else
-		{
+		} else {
 			//database connection
 			global $wpdb;
 
@@ -267,7 +270,7 @@ class wpec_taxes {
 			$columns = array_map( 'esc_sql', $columns );
 
 			//if where is set then formulate conditions
-			if ( $where ) {
+			if ( ! empty( $where ) ) {
 				foreach ( $where as $column => $condition ) {
 					$condition = esc_sql( $condition );
 					$where_query[] = ( is_numeric( $condition ) ) ? "{$column}={$condition}" : "{$column}='{$condition}'";
@@ -300,22 +303,38 @@ class wpec_taxes {
 	 * @description: wpec_taxes_get_region_information - given a region code and column
 	 *                   this function will return the resulting value.
 	 * @param: region_code - code for this region
-	 * @param: column(optional) - specify a column to retrieve
+	 * @param: attribute (optional) - specify a column to retrieve
 	 *                            Default action is to retrieve the id column.
 	 * @return: int, string, or false
 	 * */
-	function wpec_taxes_get_region_information( $region_code, $column='id' ) {
-		//check for all markets ifset return the string 'All Markets'
-		if('all-markets' == $region_code)
-		{
+	function wpec_taxes_get_region_information( $region, $attribute = 'id', $country = null ) {
+
+		$returnable = false;
+
+		if ( ( 'all-markets' == $region ) || ( 'all-markets' == $country ) ) {
 			$returnable = __( 'All Markets', 'wpsc' );
+		} else {
+
+			// prior to version 3.8.14 this function was made available without the country parameter, because
+			// there is no assurance that region code ar unique across the globe we need to specify a country
+			// at the time of this change this function was not called with WPeC, but just in case we have a
+			// little logic here to try to catch an improper call, but it isn't perfect.
+
+			if ( ( $country == null ) ) {
+				_wpsc_doing_it_wrong( __FUNCTION__, __( 'Prior to version 3.8.14 this function was made available without the country parameter, because there is no assurance that region code ar unique across the globe we need to specify a country.', 'wpsc' ), '3.8.14' );
+			}
+
+			//check for all markets ifset return the string 'All Markets'
+			if ( ! $returnable ) {
+				$wpsc_country = new WPSC_Country( $country );
+				if ( $wpsc_country ) {
+					$wpsc_region = $wpsc_country->get_region( $region );
+					if ( $wpsc_region ) {
+						$returnable = $wpsc_region->get( $attribute );
+					}
+				}
+			}
 		}
-		else
-		{
-			global $wpdb;
-			$query = $wpdb->prepare( "SELECT " . esc_sql( $column ) . " FROM " . WPSC_TABLE_REGION_TAX . " WHERE code = %s", $region_code );
-			$returnable = $wpdb->get_var( $query );
-		}// if
 
 		return $returnable;
 	} // wpec_taxes_get_region_information
@@ -327,22 +346,29 @@ class wpec_taxes {
 	 * @return: array or false
 	 * */
 	function wpec_taxes_get_regions( $country ) {
-		//database connection
-		global $wpdb;
 
-		if( isset( $country ) && 'all-markets' == $country ) return;
-		//get the id for the given country code
-		$country_id = $this->wpec_taxes_get_country_information( 'id', array( 'isocode' => $country ) );
+		$wpsc_country = new WPSC_Country( $country );
 
-		//get a list of regions for the country id
-		$query = 'SELECT name, code AS region_code FROM ' . WPSC_TABLE_REGION_TAX . " WHERE country_id=$country_id";
-		$result = $wpdb->get_results( $query, ARRAY_A );
+		$regions = $wpsc_country->get_regions_array();
+
+		// backwards compatability at version 3.8.14, the rest of the module needs region to be called 'region_code'.
+		// TODO: update taxes module to use WPSC_Region objects
+		foreach ( $regions as $index => $region ) {
+			$region['region_code'] = $region['code'];
+			unset( $region['region'] );
+			$regions[$index] = $region;
+		}
+
+		if ( isset( $country ) && 'all-markets' == $country ) {
+			return;
+		}
 
 		//add the all markets option to the list
-		if ( ! empty( $result ) )
-			array_unshift($result, array('region_code'=>'all-markets', 'name' => __( 'All Markets', 'wpsc' ) ) );
+		if ( ! empty( $regions ) ) {
+			array_unshift( $regions , array( 'region_code' => 'all-markets', 'name' => __( 'All Markets', 'wpsc' ), ) );
+		}
 
-		return $result;
+		return $regions;
 	} // wpec_taxes_get_regions
 
 	/**
@@ -351,15 +377,24 @@ class wpec_taxes {
 	 * @param: id - a region id
 	 * @return: int or false
 	 * */
-	function wpec_taxes_get_region_code_by_id( $id ) {
-		//database connection
-		global $wpdb;
-		if( ! empty( $id ) ){
-			//get the region code
-			$query = $wpdb->prepare( 'SELECT code AS region_code FROM ' . WPSC_TABLE_REGION_TAX . " WHERE id = %d", $id );
-			return $wpdb->get_var( $query );
+	function wpec_taxes_get_region_code_by_id( $region ) {
+		$region_code = false;
+
+		if ( ! empty( $region ) ) {
+			$country_id = WPSC_Countries::get_country_id_by_region_id( $region );
+			if ( $country_id ) {
+				$wpsc_country = new WPSC_Country( $country_id );
+			}
+
+			if ( isset( $wpsc_country ) ) {
+				$wpsc_region = $wpsc_country->get_region( $region );
+				if ( $wpsc_region ) {
+					$region_code = $wpsc_region->get_code();
+				}
+			}
 		}
-		return false;
+
+		return $region_code;
 	} // wpec_taxes_get_region_code_by_id
 } // wpec_taxes
 

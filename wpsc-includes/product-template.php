@@ -57,6 +57,7 @@ function wpsc_product_variation_price_from( $product_id, $args = null ) {
 
 	static $price_data = array();
 
+	/* @todo: Rewrite using proper WP_Query */
 	if ( isset( $price_data[$product_id] ) ) {
 		$results = $price_data[$product_id];
 	} else {
@@ -67,10 +68,9 @@ function wpsc_product_variation_price_from( $product_id, $args = null ) {
 			SELECT pm.meta_value AS price, pm2.meta_value AS special_price
 			FROM {$wpdb->posts} AS p
 			INNER JOIN {$wpdb->postmeta} AS pm ON pm.post_id = p.id AND pm.meta_key = '_wpsc_price'
-			INNER JOIN {$wpdb->postmeta} AS pm2 ON pm2.post_id = p.id AND pm2.meta_key = '_wpsc_special_price'
+			LEFT JOIN {$wpdb->postmeta} AS pm2 ON pm2.post_id = p.id AND pm2.meta_key = '_wpsc_special_price'
 			$stock_sql
-			WHERE p.post_type = 'wpsc-product'
-				AND p.post_parent = %d
+			WHERE p.post_type = 'wpsc-product' AND p.post_parent = %d AND p.post_status IN ( 'publish', 'inherit' )
 		", $product_id );
 
 		$results = $wpdb->get_results( $sql );
@@ -189,22 +189,33 @@ function wpsc_the_product_thumbnail_id( $product_id ) {
 function _wpsc_regenerate_thumbnail_size( $thumbnail_id, $size ) {
 	// regenerate size metadata in case it's missing
 	require_once( ABSPATH . 'wp-admin/includes/image.php' );
-	if ( ! $metadata = wp_get_attachment_metadata( $thumbnail_id ) )
-		$metadata = array();
-	if ( empty( $metadata['sizes'] ) )
-		$metadata['sizes'] = array();
 
-	$file = get_attached_file( $thumbnail_id );
+	if ( ! $metadata = wp_get_attachment_metadata( $thumbnail_id ) ) {
+		$metadata = array();
+	}
+
+	if ( empty( $metadata['sizes'] ) ) {
+		$metadata['sizes'] = array();
+	}
+
+	$file      = get_attached_file( $thumbnail_id );
 	$generated = wp_generate_attachment_metadata( $thumbnail_id, $file );
 
-	if ( empty( $generated ) )
+	if ( empty( $generated ) ) {
 		return false;
+	}
+
+	if ( empty( $generated['sizes'] ) ) {
+		$generated['sizes'] = array();
+	}
+
 	$metadata['sizes'] = array_merge( $metadata['sizes'], $generated['sizes'] );
 	wp_update_attachment_metadata( $thumbnail_id, $metadata );
+
 	return true;
 }
 
-function wpsc_get_downloadable_file($file_id){
+function wpsc_get_downloadable_file( $file_id ) {
 	return get_post( $file_id );
 }
 
@@ -232,7 +243,7 @@ function wpsc_product_has_variations( $id = 0 ) {
 	if ( ! $id )
 		$id = get_the_ID();
 
-	if ( ! isset( $has_variations[$id] ) ) {
+	if ( ! isset( $has_variations[ $id ] ) ) {
 		$args = array(
 			'post_parent' => $id,
 			'post_type'   => 'wpsc-product',
@@ -259,13 +270,18 @@ function wpsc_product_has_variations( $id = 0 ) {
  * @uses   wpsc_the_product_thumbnail_id()  Get the product thumbnail ID
  */
 function wpsc_maybe_get_the_parent_product_thumbnail_id( $thumbnail_id, $product_id ) {
+
 	if ( ! $thumbnail_id ) {
 		$product = get_post( $product_id );
-		if ( $product->post_parent > 0 )
+
+		if ( is_a( $product, 'WP_Post' ) && $product->post_parent > 0 ) {
 			$thumbnail_id = wpsc_the_product_thumbnail_id( $product->post_parent );
+		}
 	}
+
 	return $thumbnail_id;
 }
+
 add_filter( 'wpsc_the_product_thumbnail_id', 'wpsc_maybe_get_the_parent_product_thumbnail_id', 10, 2 );
 
 function wpsc_get_product_gallery( $id ) {
@@ -299,6 +315,7 @@ function wpsc_get_product_gallery( $id ) {
 			return array();
 
 		$args['post__in'] = $ids;
+		$args['orderby'] = 'post__in';
 	}
 
 	return get_posts( $args );

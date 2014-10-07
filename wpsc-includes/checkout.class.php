@@ -4,7 +4,7 @@
  * WP eCommerce checkout class
  *
  * These are the class for the WP eCommerce checkout
- * The checkout class handles dispaying the checkout form fields
+ * The checkout class handles displaying the checkout form fields
  *
  * @package wp-e-commerce
  * @subpackage wpsc-checkout-classes
@@ -15,17 +15,11 @@
  * @access public
  *
  * @since 3.8
- * @param $country (string) isocode for a country
+ * @param $country (string) ISO code for a country
  * @return (boolean) true is country has regions else false
  */
-function wpsc_has_regions($country){
-	global $wpdb;
-	$country_data = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `isocode` IN(%s) LIMIT 1", $country ), ARRAY_A );
-	if ($country_data['has_regions'] == 1)
-		return true;
-	else
-		return false;
-
+function wpsc_has_regions( $country ){
+	return WPSC_Countries::country_has_regions( $country );
 }
 
 /**
@@ -67,38 +61,6 @@ function wpsc_get_buyers_email($purchase_id){
 
 	return $email;
 }
-
-/**
- * wpsc google checkout submit used for google checkout (unsure whether necessary in 3.8)
- * @access public
- *
- * @since 3.7
- */
-function wpsc_google_checkout_submit() {
-	global $wpdb, $wpsc_cart, $current_user;
-	$wpsc_checkout = new wpsc_checkout();
-	$purchase_log_id = $wpdb->get_var( "SELECT `id` FROM `" . WPSC_TABLE_PURCHASE_LOGS . "` WHERE `sessionid` IN(%s) LIMIT 1", wpsc_get_customer_meta( 'checkout_session_id' ) );
-	get_currentuserinfo();
-	if ( $current_user->display_name != '' ) {
-		foreach ( $wpsc_checkout->checkout_items as $checkoutfield ) {
-			if ( $checkoutfield->unique_name == 'billingfirstname' ) {
-				$checkoutfield->value = $current_user->display_name;
-			}
-		}
-	}
-	if ( $current_user->user_email != '' ) {
-		foreach ( $wpsc_checkout->checkout_items as $checkoutfield ) {
-			if ( $checkoutfield->unique_name == 'billingemail' ) {
-				$checkoutfield->value = $current_user->user_email;
-			}
-		}
-	}
-
-	$wpsc_checkout->save_forms_to_db( $purchase_log_id );
-	$wpsc_cart->save_to_db( $purchase_log_id );
-	$wpsc_cart->submit_stock_claims( $purchase_log_id );
-}
-
 /**
  * returns the tax label
  * @access public
@@ -147,9 +109,10 @@ function wpsc_get_acceptable_countries() {
 		$target_market_ids = $target_market_ids[0];
 	}
 
-	$country_data = $wpdb->get_results( "SELECT * FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `visible`= '1' ORDER BY `country` ASC", ARRAY_A );
+	$country_data = WPSC_Countries::get_countries_array();
+
 	$have_target_market = $have_target_market && count( $country_data ) != count( $target_market_ids );
-	$GLOBALS['wpsc_country_data'] = $country_data;
+	$GLOBALS['wpsc_country_data'] = $country_data; // TODO Is this ever used?
 
 	$conflict_error = wpsc_get_customer_meta( 'category_shipping_conflict' );
 	$target_conflict = wpsc_get_customer_meta( 'category_shipping_target_market_conflict' );
@@ -255,11 +218,11 @@ class wpsc_checkout {
 	}
 
 	function form_name_is_required() {
-		if ( $this->checkout_item->mandatory == 0 ) {
-			return false;
-		} else {
-			return true;
-		}
+		return ! $this->checkout_item->mandatory == 0;
+	}
+
+	function form_element_active() {
+		return $this->checkout_item->active != 0;
 	}
 
 	/**
@@ -268,6 +231,27 @@ class wpsc_checkout {
 	 */
 	function form_element_id() {
 		return 'wpsc_checkout_form_' . $this->checkout_item->id;
+	}
+
+	/**
+	 * form_item_id method, returns the form html ID
+	 * @access public
+	 */
+	function form_item_id() {
+		return $this->checkout_item->id;
+	}
+
+	/**
+	 * returns the unqiue name for the current checkout item
+	 *
+	 * @since 3.8.14
+	 *
+	 * @access public
+	 *
+	 * @return string	unqiue name associated with the current checkout item
+	 */
+	function form_item_unique_name() {
+		return $this->checkout_item->unique_name;
 	}
 
 	/**
@@ -287,12 +271,8 @@ class wpsc_checkout {
 	 * @access public
 	 */
 	function form_field() {
-		global $wpdb, $user_ID, $wpsc_customer_checkout_details;
 
-		if ( ( $user_ID > 0 ) ) {
-			$delivery_country_id = wpsc_get_country_form_id_by_type( 'delivery_country' );
-     		$billing_country_id = wpsc_get_country_form_id_by_type( 'country' );
-		}
+		global $wpdb, $user_ID, $wpsc_customer_checkout_details;
 
 		$saved_form_data = empty( $wpsc_customer_checkout_details[$this->checkout_item->id] ) ? null : $wpsc_customer_checkout_details[$this->checkout_item->id];
 		$an_array = '';
@@ -300,17 +280,26 @@ class wpsc_checkout {
 			if ( $this->checkout_item->checkout_set == wpsc_get_ticket_checkout_set() )
 				$an_array = '[]';
 		}
+
 		$output = '';
-		$delivery_country = wpsc_get_customer_meta( 'shipping_country' );
-		$billing_country  = wpsc_get_customer_meta( 'billing_country'  );
-		$delivery_region  = wpsc_get_customer_meta( 'shipping_region'  );
-		$billing_region   = wpsc_get_customer_meta( 'billing_region'   );
+		$delivery_country = wpsc_get_customer_meta( 'shippingcountry' );
+		$billing_country  = wpsc_get_customer_meta( 'billingcountry'  );
+		$delivery_region  = wpsc_get_customer_meta( 'shippingregion'  );
+		$billing_region   = wpsc_get_customer_meta( 'billingregion'   );
+
+		$meta_key = ! empty( $this->checkout_item->unique_name ) ? $this->checkout_item->unique_name : sanitize_title( $this->checkout_item->name ) . '_' . $this->checkout_item->id;
+
 		switch ( $this->checkout_item->type ) {
+
 			case "address":
 			case "delivery_address":
 			case "textarea":
 				$placeholder = apply_filters( 'wpsc_checkout_field_placeholder', apply_filters( 'wpsc_checkout_field_name', $this->checkout_item->name ), $this->checkout_item );
-				$output .= "<textarea title='" . $this->checkout_item->unique_name . "' class='text' id='" . $this->form_element_id() . "' name='collected_data[{$this->checkout_item->id}]" . $an_array . "' placeholder='" . esc_attr( $placeholder ) . "' rows='3' cols='40' >" . esc_html( (string) $saved_form_data ) . "</textarea>";
+				$output .= '<textarea data-wpsc-meta-key="' . $meta_key . '" title="' . $this->checkout_item->unique_name
+							. '" class="text wpsc-visitor-meta" id="' . $this->form_element_id()
+								. '" name="collected_data[' . $this->checkout_item->id . ']' . $an_array . '" placeholder="'
+										. esc_attr( $placeholder ) . '" rows="3" cols="40" >'
+												. esc_textarea( (string) $saved_form_data ) . '</textarea>';
 				break;
 
 			case "checkbox":
@@ -320,7 +309,7 @@ class wpsc_checkout {
 					foreach ( $options as $label => $value ) {
 						?>
 							<label>
-								<input <?php checked( in_array( $value, (array) $saved_form_data ) ); ?> type="checkbox" name="collected_data[<?php echo esc_attr( $this->checkout_item->id ); ?>]<?php echo $an_array; ?>[]" value="<?php echo esc_attr( $value ); ?>"  />
+								<input class="wpsc-visitor-meta" data-wpsc-meta-key="<?php echo $meta_key; ?>" <?php checked( in_array( $value, (array) $saved_form_data ) ); ?> type="checkbox" name="collected_data[<?php echo esc_attr( $this->checkout_item->id ); ?>]<?php echo $an_array; ?>[]" value="<?php echo esc_attr( $value ); ?>"  />
 								<?php echo esc_html( $label ); ?>
 							</label>
 						<?php
@@ -329,22 +318,18 @@ class wpsc_checkout {
 				break;
 
 			case "country":
-				$output = wpsc_country_region_list( $this->checkout_item->id, false, $billing_country, $billing_region, $this->form_element_id() );
+				$output = wpsc_country_list( $this->checkout_item->id, null, $billing_country, $billing_region, $this->form_element_id() );
 				break;
 
 			case "delivery_country":
-				if ( wpsc_uses_shipping ( ) ) {
-					$country_name = $wpdb->get_var( $wpdb->prepare( "SELECT `country` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `isocode`= %s LIMIT 1", $delivery_country ) );
-					$output = "<input title='" . $this->checkout_item->unique_name . "' type='hidden' id='" . $this->form_element_id() . "' class='shipping_country' name='collected_data[{$this->checkout_item->id}]' value='" . esc_attr( $delivery_country ) . "' size='4' /><span class='shipping_country_name'>" . $country_name . "</span> ";
-				} else {
-					$checkoutfields = true;
-					$output = wpsc_country_region_list( $this->checkout_item->id, false, $delivery_country, $delivery_region, $this->form_element_id(), $checkoutfields );
-				}
+				$checkoutfields = true;
+				$output = wpsc_country_list( $this->checkout_item->id, null, $delivery_country, $delivery_region, $this->form_element_id(), $checkoutfields );
 				break;
+
 			case "select":
 				$options = $this->get_checkout_options( $this->checkout_item->id );
 				if ( $options != '' ) {
-					$output = "<select name='collected_data[{$this->checkout_item->id}]" . $an_array . "'>";
+					$output = '<select class="wpsc-visitor-meta" data-wpsc-meta-key="' . $meta_key . '" name="collected_data[' . $this->checkout_item->id . ']"' . $an_array . '">';
 					$output .= "<option value='-1'>" . _x( 'Select an Option', 'Dropdown default when called within checkout class' , 'wpsc' ) . "</option>";
 					foreach ( (array)$options as $label => $value ) {
 						$value = esc_attr(str_replace( ' ', '', $value ) );
@@ -359,37 +344,27 @@ class wpsc_checkout {
 					foreach ( (array)$options as $label => $value ) {
 						?>
 							<label>
-								<input type="radio" <?php checked( $value, $saved_form_data ); ?> name="collected_data[<?php echo esc_attr( $this->checkout_item->id ); ?>]<?php echo $an_array; ?>" value="<?php echo esc_attr( $value ); ?>"  />
+								<input class="wpsc-visitor-meta" data-wpsc-meta-key="<?php echo $meta_key; ?>" type="radio" <?php checked( $value, $saved_form_data ); ?> name="collected_data[<?php echo esc_attr( $this->checkout_item->id ); ?>]<?php echo $an_array; ?>" value="<?php echo esc_attr( $value ); ?>"  />
 								<?php echo esc_html( $label ); ?>
 							</label>
 						<?php
 					}
 				}
 				break;
+
 			case "text":
 			case "city":
 			case "delivery_city":
 			case "email":
 			case "coupon":
 			default:
-				$placeholder = apply_filters( 'wpsc_checkout_field_placeholder', apply_filters( 'wpsc_checkout_field_name', $this->checkout_item->name ), $this->checkout_item );
 				if ( $this->checkout_item->unique_name == 'shippingstate' ) {
-					if ( wpsc_uses_shipping() && wpsc_has_regions($delivery_country) ) {
-						$region_name = $wpdb->get_var( $wpdb->prepare( "SELECT `name` FROM `" . WPSC_TABLE_REGION_TAX . "` WHERE `id`= %d LIMIT 1", $delivery_region ) );
-						$output = "<input title='" . $this->checkout_item->unique_name . "' type='hidden' id='" . $this->form_element_id() . "' class='shipping_region' name='collected_data[{$this->checkout_item->id}]' placeholder='" . esc_attr( $placeholder ) . "' value='" . esc_attr( $delivery_region ) . "' size='4' /><span class='shipping_region_name'>" . esc_html( $region_name ) . "</span> ";
-					} else {
-						$disabled = '';
-						if(wpsc_disregard_shipping_state_fields())
-							$disabled = 'disabled = "disabled"';
-						$output = "<input class='shipping_region text' title='" . $this->checkout_item->unique_name . "' type='text' id='" . $this->form_element_id() . "' placeholder='" . esc_attr( $placeholder ) . "' value='" . esc_attr( $saved_form_data ) . "' name='collected_data[{$this->checkout_item->id}]" . $an_array . "' ".$disabled." />";
-					}
+					$output .= wpsc_checkout_shipping_state_and_region( $this );
 				} elseif ( $this->checkout_item->unique_name == 'billingstate' ) {
-					$disabled = '';
-					if(wpsc_disregard_billing_state_fields())
-						$disabled = 'disabled = "disabled"';
-					$output = "<input class='billing_region text' title='" . $this->checkout_item->unique_name . "' type='text' id='" . $this->form_element_id() . "' placeholder='" . esc_attr( $placeholder ) . "' value='" . esc_attr( $saved_form_data ) . "' name='collected_data[{$this->checkout_item->id}]" . $an_array . "' ".$disabled." />";
+					$output .= wpsc_checkout_billing_state_and_region( $this );
 				} else {
-					$output = "<input title='" . $this->checkout_item->unique_name . "' type='text' id='" . $this->form_element_id() . "' class='text' placeholder='" . esc_attr( $placeholder ) . "' value='" . esc_attr( $saved_form_data ) . "' name='collected_data[{$this->checkout_item->id}]" . $an_array . "' />";
+					$placeholder = apply_filters( 'wpsc_checkout_field_placeholder', apply_filters( 'wpsc_checkout_field_name', $this->checkout_item->name ), $this->checkout_item );
+					$output = '<input data-wpsc-meta-key="' . $meta_key . '" title="' . $meta_key . '" type="text" id="' . $this->form_element_id() . '" class="text wpsc-visitor-meta" placeholder="' . esc_attr( $placeholder ) . '" value="' . esc_attr( $saved_form_data ) . '" name="collected_data[' . $this->checkout_item->id . ']' . $an_array . '" />';
 				}
 
 				break;
@@ -457,7 +432,7 @@ class wpsc_checkout {
 		}
 		if ( isset( $_POST['log'] ) || isset( $_POST['pwd'] ) || isset( $_POST['user_email'] ) ) {
 			$results = wpsc_add_new_user( $_POST['log'], $_POST['pwd'], $_POST['user_email'] );
-			if ( is_callable( array( $results, "get_error_code" ) ) && $results->get_error_code() ) {
+			if ( is_callable( array( $results, 'get_error_code' ) ) && $results->get_error_code() ) {
 				foreach ( $results->get_error_codes() as $code ) {
 					foreach ( $results->get_error_messages( $code ) as $error ) {
 						$wpsc_registration_error_messages[] = $error;
@@ -466,7 +441,7 @@ class wpsc_checkout {
 					$any_bad_inputs = true;
 				}
 			}
-			if ( $results->ID > 0 ) {
+			if ( property_exists( $results, 'ID' ) && ( $results->ID > 0 ) ) {
 				$our_user_id = $results->ID;
 			} else {
 				$any_bad_inputs = true;
@@ -481,76 +456,78 @@ class wpsc_checkout {
 			$user_ID = $our_user_id;
 		}
 
-		$location_changed = false;
 		//Basic Form field validation for billing and shipping details
 		foreach ( $this->checkout_items as $form_data ) {
-			$value = '';
 
-			if( isset( $_POST['collected_data'][$form_data->id] ) )
-				$value = stripslashes_deep( $_POST['collected_data'][$form_data->id] );
+			$value = wpsc_get_customer_meta( $form_data->unique_name );
 
 			$wpsc_customer_checkout_details[$form_data->id] = $value;
-			$bad_input = false;
-			if ( ($form_data->mandatory == 1) || ($form_data->type == "coupon") ) {
-				// dirty hack
-				if ( $form_data->unique_name == 'billingstate' && empty( $value ) ) {
-					$billing_country_id = $wpdb->get_var( "SELECT `" . WPSC_TABLE_CHECKOUT_FORMS . "`.`id` FROM `" . WPSC_TABLE_CHECKOUT_FORMS . "` WHERE `unique_name` = 'billingcountry' AND active = '1' " );
 
-					if ( isset( $_POST['collected_data'][ $billing_country_id ][1] ) ) {
-						$value = $_POST['collected_data'][ $billing_country_id ][1];
-					} else {
+			$bad_input = false;
+			if ( ( $form_data->mandatory == 1 ) || ( $form_data->type == 'coupon' ) ) {
+
+				if ( $form_data->unique_name == 'billingstate' && empty( $value ) ) {
+
+					$value = wpsc_get_customer_meta( 'billingregion' );
+					if ( empty( $value ) ) {
 						$any_bad_inputs = true;
 						$bad_input      = true;
+						$country = new WPSC_Country( wpsc_get_customer_meta( 'billingcountry' ) );
+						$name    = $country->get( 'region_label' );
 					}
-				}
+				} else if ( $form_data->unique_name == 'shippingstate' && empty( $value ) ) {
 
-				switch ( $form_data->type ) {
-					case "email":
-						if ( !preg_match( "/^[a-zA-Z0-9._-]+@[a-zA-Z0-9-.]+\.[a-zA-Z]{2,5}$/", $value ) ) {
-							$any_bad_inputs = true;
-							$bad_input = true;
-						}
-						break;
+					$value = wpsc_get_customer_meta( 'shippingregion' );
+					if ( empty( $value ) ) {
+						$any_bad_inputs = true;
+						$bad_input      = true;
+						$country = new WPSC_Country( wpsc_get_customer_meta( 'shippingcountry' ) );
+						$name    = $country->get( 'region_label' );
+					}
+				} else {
 
-					case "delivery_country":
-					case "country":
-					case "heading":
-						break;
-					case "select":
-						if ( $value == '-1' ) {
-							$any_bad_inputs = true;
-							$bad_input = true;
-						}
-						break;
-					default:
-						if ( $value == null ) {
-							$any_bad_inputs = true;
-							$bad_input = true;
-						}
-						break;
+					$name = $form_data->name;
+
+					switch ( $form_data->type ) {
+						case 'email':
+
+							if ( ! preg_match( '/^[a-zA-Z0-9._-]+@[a-zA-Z0-9-.]+\.[a-zA-Z]{2,5}$/', $value ) ) {
+								$any_bad_inputs = true;
+								$bad_input = true;
+							}
+							break;
+
+						case 'delivery_country':
+						case 'country':
+							if ( empty( $value ) ) {
+								$any_bad_inputs = true;
+								$bad_input      = true;
+							}
+							break;
+
+						case 'heading':
+							break;
+
+						case 'select':
+							if ( $value == '-1' ) {
+								$any_bad_inputs = true;
+								$bad_input = true;
+							}
+							break;
+
+						default:
+							if ( empty( $value ) ) {
+								$any_bad_inputs = true;
+								$bad_input = true;
+							}
+
+							break;
+					}
 				}
 
 				if ( $bad_input === true ) {
-					$wpsc_checkout_error_messages[$form_data->id] = sprintf(__( 'Please enter a valid <span class="wpsc_error_msg_field_name">%s</span>.', 'wpsc' ), esc_attr($form_data->name) );
+					$wpsc_checkout_error_messages[$form_data->id] = sprintf( __( 'Please enter a valid <span class="wpsc_error_msg_field_name">%s</span>.', 'wpsc' ), strtolower( esc_attr( $name ) ) );
 					$wpsc_customer_checkout_details[$form_data->id] = '';
-				}
-			}
-
-			if ( ! $bad_input ) {
-				if ( $form_data->unique_name == 'shippingstate' ) {
-					$shipping_country_field_id = wpsc_get_country_form_id_by_type( 'delivery_country' );
-					$shipping_country = $_POST['collected_data'][$shipping_country_field_id];
-					if ( ! is_array( $shipping_country ) || ! isset( $shipping_country[1] ) ) {
-						wpsc_update_customer_meta( 'shipping_region', $value );
-						$location_changed = true;
-					}
-				} elseif ( $form_data->unique_name == 'billingstate' ) {
-					$billing_country_field_id = wpsc_get_country_form_id_by_type( 'country' );
-					$billing_country = $_POST['collected_data'][$billing_country_field_id];
-					if ( ! is_array( $billing_country ) || ! isset( $billing_country[1] ) ) {
-						wpsc_update_customer_meta( 'billing_region', $value );
-						$location_changed = true;
-					}
 				}
 			}
 		}
@@ -560,16 +537,17 @@ class wpsc_checkout {
 		wpsc_update_customer_meta( 'registration_error_messages' , $wpsc_registration_error_messages );
 
 		$filtered_checkout_details = apply_filters( 'wpsc_update_customer_checkout_details', $wpsc_customer_checkout_details );
+
 		// legacy filter
-		if ( is_user_logged_in() )
+		if ( is_user_logged_in() ) {
 			$filtered_checkout_details = apply_filters( 'wpsc_checkout_user_profile_update', $wpsc_customer_checkout_details, get_current_user_id() );
-		wpsc_update_customer_meta( 'checkout_details', $filtered_checkout_details );
+		}
 
-		if ( $location_changed )
-			$wpsc_cart->update_location();
+		// Check if the shoppers location has changed
+		_wpsc_has_visitor_location_changed();
 
-		$states = array( 'is_valid' => !$any_bad_inputs, 'error_messages' => $bad_input_message );
-		$states = apply_filters('wpsc_checkout_form_validation', $states);
+		$states = array( 'is_valid' => ! $any_bad_inputs, 'error_messages' => $bad_input_message );
+		$states = apply_filters( 'wpsc_checkout_form_validation', $states );
 		return $states;
 	}
 
@@ -578,124 +556,77 @@ class wpsc_checkout {
 	 * @access public
 	 */
 	function save_forms_to_db( $purchase_id ) {
-		global $wpdb;
-
-		// needs refactoring badly
-		$shipping_state_id = $wpdb->get_var( "SELECT `" . WPSC_TABLE_CHECKOUT_FORMS . "`.`id` FROM `" . WPSC_TABLE_CHECKOUT_FORMS . "` WHERE `unique_name` = 'shippingstate' " );
-		$billing_state_id = $wpdb->get_var( "SELECT `" . WPSC_TABLE_CHECKOUT_FORMS . "`.`id` FROM `" . WPSC_TABLE_CHECKOUT_FORMS . "` WHERE `unique_name` = 'billingstate' " );
-		$shipping_state = $billing_state = '';
-
-		$_POST['collected_data'] = stripslashes_deep( $_POST['collected_data'] );
 
 		foreach ( $this->checkout_items as $form_data ) {
-			if ( $form_data->type == 'heading' )
-				continue;
 
-			$value = '';
-			if( isset( $_POST['collected_data'][$form_data->id] ) )
-				$value = $_POST['collected_data'][$form_data->id];
-			if ( empty( $value ) && isset( $form_data->value ) )
-				$value = $form_data->value;
-			if ( $form_data->unique_name == 'billingstate' ) {
-				$billing_state = $value;
+			if ( $form_data->type == 'heading' ) {
 				continue;
-			} elseif( $form_data->unique_name == 'shippingstate' ) {
-				$shipping_state = $value;
-				continue;
-			} elseif ( is_array( $value ) ) {
-				if ( in_array( $form_data->unique_name, array( 'billingcountry' , 'shippingcountry' ) ) ) {
-					if ( isset( $value[1] ) )
-						if ( $form_data->unique_name == 'billingcountry' )
-							$billing_state = $value[1];
-						else
-							$shipping_state = $value[1];
+			}
 
-					$value = $value[0];
-					$prepared_query = $wpdb->insert(
-								    WPSC_TABLE_SUBMITTED_FORM_DATA,
-								    array(
-									'log_id' => $purchase_id,
-									'form_id' => $form_data->id,
-									'value' => $value
-								    ),
-								    array(
-									'%d',
-									'%d',
-									'%s'
-								    )
-								);
-				} else {
-					foreach ( (array)$value as $v ) {
-					    $prepared_query = $wpdb->insert(
-								    WPSC_TABLE_SUBMITTED_FORM_DATA,
-								    array(
-									'log_id' => $purchase_id,
-									'form_id' => $form_data->id,
-									'value' => $v
-								    ),
-								    array(
-									'%d',
-									'%d',
-									'%s'
-								    )
-								);
+			$customer_meta_key    = ! empty( $form_data->unique_name ) ? $form_data->unique_name : sanitize_title( $form_data->name ) . '_' . $form_data->id;
+			$checkout_item_values = wpsc_get_customer_meta( $customer_meta_key );
+
+			// Prior to release 3.8.14 the billingstate and shippingstate checkout items were used
+			// differently depending on if the billingcountry and shippingcountry values contained countries
+			// that used regions.  When countries with regions were present, the billing state field was
+			// set to the numeric region id, rather than the string name of the region.  A better long term
+			// solution may be to have a distinct checkout item to hold the billingregion or shippingregion
+			// code when available.
+			if ( $customer_meta_key == 'billingstate' ) {
+				$current_country = wpsc_get_customer_meta( 'billingcountry' );
+				if ( ! empty( $current_country) ) {
+					$wpsc_country = new WPSC_Country( $current_country );
+					if ( $wpsc_country->has_regions() ) {
+						$region = wpsc_get_customer_meta( 'billingregion' );
+						if ( ! empty( $region ) ) {
+							$checkout_item_values = $region;
+						}
 					}
 				}
-			} else {
-			    $prepared_query = $wpdb->insert(
-							WPSC_TABLE_SUBMITTED_FORM_DATA,
-							array(
-							    'log_id' => $purchase_id,
-							    'form_id' => $form_data->id,
-							    'value' => $value
-							),
-							array(
-							    '%d',
-							    '%d',
-							    '%s'
-							)
-						    );
+			} elseif (  $customer_meta_key == 'shippingstate' ) {
+				$current_country = wpsc_get_customer_meta( 'shippingcountry' );
+				if ( ! empty( $current_country) ) {
+					$wpsc_country = new WPSC_Country( $current_country );
+					if ( $wpsc_country->has_regions() ) {
+						$region = wpsc_get_customer_meta( 'shippingregion' );
+						if ( ! empty( $region ) ) {
+							$checkout_item_values = $region;
+						}
+					}
+				}
+			}
+
+			if ( ! is_array( $checkout_item_values ) ) {
+				$checkout_item_values = array( $checkout_item_values );
+			}
+
+			global $wpdb;
+
+			foreach ( $checkout_item_values as $checkout_item_value ) {
+				$prepared_query = $wpdb->insert(
+						WPSC_TABLE_SUBMITTED_FORM_DATA,
+						array(
+								'log_id'  => $purchase_id,
+								'form_id' => $form_data->id,
+								'value'   => $checkout_item_value,
+						),
+						array(
+								'%d',
+								'%d',
+								'%s',
+						)
+				);
 			}
 		}
-
-		// update the states
-		$wpdb->insert(
-			    WPSC_TABLE_SUBMITTED_FORM_DATA,
-			    array(
-				'log_id' => $purchase_id,
-				'form_id' => $shipping_state_id,
-				'value' => $shipping_state
-			    ),
-			    array(
-				'%d',
-				'%d',
-				'%s'
-			    )
-			);
-		$wpdb->insert(
-			    WPSC_TABLE_SUBMITTED_FORM_DATA,
-			    array(
-				'log_id' => $purchase_id,
-				'form_id' => $billing_state_id,
-				'value' => $billing_state
-			    ),
-			    array(
-				'%d',
-				'%d',
-				'%s'
-			    )
-			);
-
-	    }
+	}
 
 	/**
 	 * Function that checks how many checkout fields are stored in checkout form fields table
 	 */
 	function get_count_checkout_fields() {
-		global $wpdb;
-		$sql = "SELECT COUNT(*) FROM `" . WPSC_TABLE_CHECKOUT_FORMS . "` WHERE `type` !='heading' AND `active`='1'";
-		$count = $wpdb->get_var( $sql );
-		return (int) $count;
+		$checkout = new WPSC_Checkout_Form();
+		$count    = $checkout->get_field_count();
+		return $count;
 	}
 
 	/**
@@ -710,15 +641,18 @@ class wpsc_checkout {
 	function the_checkout_item() {
 		$this->in_the_loop = true;
 		$this->checkout_item = $this->next_checkout_item();
-		if ( $this->current_checkout_item == 0 ) // loop has just started
-			do_action( 'wpsc_checkout_loop_start' );
+		if ( $this->current_checkout_item == 0 ) {
+			// loop has just started
+			do_action( 'wpsc_checkout_loop_start', $this );
+		}
+		return $this->checkout_item;
 	}
 
 	function have_checkout_items() {
 		if ( $this->current_checkout_item + 1 < $this->checkout_item_count ) {
 			return true;
 		} else if ( $this->current_checkout_item + 1 == $this->checkout_item_count && $this->checkout_item_count > 0 ) {
-			do_action( 'wpsc_checkout_loop_end' );
+			do_action( 'wpsc_checkout_loop_end', $this );
 			// Do some cleaning up after the loop,
 			$this->rewind_checkout_items();
 		}
@@ -736,5 +670,31 @@ class wpsc_checkout {
 			$this->checkout_item = $this->checkout_items[0];
 		}
 	}
+
+	/**
+	 * find the checkout item that corresponsds to the identifier
+	 *
+	 * @param int|string $id  the checkout item identifier, if a numeric the checkout item id, if a string the checkout item unique name
+	 *
+	 * @return cehckout item found, or false if not found
+	 */
+	function get_checkout_item( $id ) {
+		$result = false;
+		if ( is_numeric( $id ) ) {
+			$result = $this->checkout_items[$id];
+		} else {
+			foreach ( $this->checkout_items as $checkout_item_id => $checkout_item ) {
+				if ( ! empty( $checkout_item->unique_name ) && $checkout_item->unique_name == $id ) {
+					$result = $checkout_item;
+					break;
+				}
+			}
+		}
+
+		return $result;
+	}
+
+
+
 
 }

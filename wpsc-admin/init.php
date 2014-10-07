@@ -245,10 +245,10 @@ function wpsc_admin_sale_rss() {
 		$output .= "<?xml version='1.0'?>\n\r";
 		$output .= "<rss version='2.0'>\n\r";
 		$output .= "  <channel>\n\r";
-		$output .= "    <title>" . _x( 'WP e-Commerce Product Log', 'admin rss product feed', 'wpsc' ) . "</title>\n\r";
+		$output .= "    <title>" . _x( 'WP eCommerce Product Log', 'admin rss product feed', 'wpsc' ) . "</title>\n\r";
 		$output .= "    <link>" . admin_url( 'admin.php?page=' . WPSC_DIR_NAME . '/display-log.php' ) . "</link>\n\r";
-		$output .= "    <description>" . _x( 'This is the WP e-Commerce Product Log RSS feed', 'admin rss product feed', 'wpsc' ) . "</description>\n\r";
-		$output .= "    <generator>" . _x( 'WP e-Commerce Plugin', 'admin rss product feed', 'wpsc' ) . "</generator>\n\r";
+		$output .= "    <description>" . _x( 'This is the WP eCommerce Product Log RSS feed', 'admin rss product feed', 'wpsc' ) . "</description>\n\r";
+		$output .= "    <generator>" . _x( 'WP eCommerce Plugin', 'admin rss product feed', 'wpsc' ) . "</generator>\n\r";
 
 		foreach ( (array)$purchase_log as $purchase ) {
 			$purchase_link = admin_url( 'admin.php?page=' . WPSC_DIR_NAME . '/display-log.php' ) . "&amp;purchaseid=" . $purchase['id'];
@@ -372,35 +372,29 @@ if ( isset( $_REQUEST['wpsc_admin_action2'] ) && ($_REQUEST['wpsc_admin_action2'
 	add_action( 'admin_init', 'wpsc_purchlog_bulk_modify' );
 }
 
-/* Start Order Notes (by Ben) */
-function wpsc_purchlogs_update_notes( $purchlog_id = '', $purchlog_notes = '' ) {
-	global $wpdb;
-	if ( wp_verify_nonce( $_POST['wpsc_purchlogs_update_notes_nonce'], 'wpsc_purchlogs_update_notes' ) ) {
-		if ( ($purchlog_id == '') && ($purchlog_notes == '') ) {
+/**
+ * Update Purchase Log Notes
+ *
+ * @param  int     $purchlog_id     Purchase log ID.
+ * @param  string  $purchlog_notes  Notes.
+ */
+function wpsc_purchlogs_update_notes( $purchlog_id = 0, $purchlog_notes = '' ) {
+	if ( isset( $_POST['wpsc_purchlogs_update_notes_nonce'] ) && wp_verify_nonce( $_POST['wpsc_purchlogs_update_notes_nonce'], 'wpsc_purchlogs_update_notes' ) ) {
+		if ( 0 == $purchlog_id && isset( $_POST['purchlog_id'] ) && '' == $purchlog_notes ) {
 			$purchlog_id = absint( $_POST['purchlog_id'] );
 			$purchlog_notes = stripslashes( $_POST['purchlog_notes'] );
 		}
-		$wpdb->update(
-			    WPSC_TABLE_PURCHASE_LOGS,
-			    array(
-				'notes' => $purchlog_notes
-			    ),
-			    array(
-				'id' => $purchlog_id
-			    ),
-			    array(
-				'%s'
-			    ),
-			    array(
-				'%d'
-			    )
-			);
+
+		if ( $purchlog_id > 0 ) {
+			$purchase_log = new WPSC_Purchase_Log( $purchlog_id );
+			$purchase_log->set( 'notes', $purchlog_notes );
+			$purchase_log->save();
+		}
 	}
 }
-if ( isset( $_REQUEST['wpsc_admin_action'] ) && ($_REQUEST['wpsc_admin_action'] == 'purchlogs_update_notes' ) )
+if ( isset( $_REQUEST['wpsc_admin_action'] ) && $_REQUEST['wpsc_admin_action'] == 'purchlogs_update_notes' ) {
 	add_action( 'admin_init', 'wpsc_purchlogs_update_notes' );
-
-/* End Order Notes (by Ben) */
+}
 
 //delete a purchase log
 function wpsc_delete_purchlog( $purchlog_id='' ) {
@@ -414,7 +408,11 @@ function wpsc_delete_purchlog( $purchlog_id='' ) {
 
 	$purchlog_status = $wpdb->get_var( $wpdb->prepare( "SELECT `processed` FROM `" . WPSC_TABLE_PURCHASE_LOGS . "` WHERE `id`= %d", $purchlog_id ) );
 	if ( $purchlog_status == 5 || $purchlog_status == 1 ) {
-		$wpdb->query( $wpdb->prepare( "DELETE FROM `" . WPSC_TABLE_CLAIMED_STOCK . "` WHERE `cart_id` = %d AND `cart_submitted` = '1'", $purchlog_id ) );
+		$claimed_query = new WPSC_Claimed_Stock( array(
+			'cart_id'        => $purchlog_id,
+			'cart_submitted' => 1
+		) );
+		$claimed_query->clear_claimed_stock( 0 );
 	}
 
 	$wpdb->query( $wpdb->prepare( "DELETE FROM `" . WPSC_TABLE_CART_CONTENTS . "` WHERE `purchaseid` = %d", $purchlog_id ) );
@@ -465,7 +463,7 @@ add_filter( 'sanitize_option_grid_number_per_row', '_wpsc_action_sanitize_option
 function _wpsc_action_update_option_require_register( $old_value, $new_value ) {
 	if ( $new_value == 1 && ! get_option( 'users_can_register' ) ) {
 		update_option( 'users_can_register', 1 );
-		$message = __( 'You wanted to require your customers to log in before checking out. However, the WordPress setting <a href="%s">"Anyone can register"</a> was disabled. WP e-Commerce has enabled that setting for you automatically.', 'wpsc' );
+		$message = __( 'You wanted to require your customers to log in before checking out. However, the WordPress setting <a href="%s">"Anyone can register"</a> was disabled. WP eCommerce has enabled that setting for you automatically.', 'wpsc' );
 		$message = sprintf( $message, admin_url( 'options-general.php' ) );
 		add_settings_error( 'require_register', 'users_can_register_turned_on', $message, 'updated' );
 	}
@@ -601,31 +599,6 @@ function wpsc_product_files_existing() {
 if ( isset( $_REQUEST['wpsc_admin_action'] ) && ($_REQUEST['wpsc_admin_action'] == 'product_files_existing') )
 	add_action( 'admin_init', 'wpsc_product_files_existing' );
 
-function wpsc_google_shipping_settings() {
-	if ( isset( $_POST['submit'] ) ) {
-		foreach ( (array)$_POST['google_shipping'] as $key => $country ) {
-			if ( $country == 'on' ) {
-				$google_shipping_country[] = $key;
-				$updated++;
-			}
-		}
-		update_option( 'google_shipping_country', $google_shipping_country );
-		$sendback = wp_get_referer();
-		$sendback = remove_query_arg( 'googlecheckoutshipping', $sendback );
-
-		if ( isset( $updated ) ) {
-			$sendback = add_query_arg( 'updated', $updated, $sendback );
-		}
-
-		wp_redirect( $sendback );
-		exit();
-	}
-}
-
-if ( isset( $_REQUEST['wpsc_admin_action'] ) && ($_REQUEST['wpsc_admin_action'] == 'google_shipping_settings') ) {
-	add_action( 'admin_init', 'wpsc_google_shipping_settings' );
-}
-
 function wpsc_update_variations() {
 	$product_id = absint( $_POST["product_id"] );
 	$product_type_object = get_post_type_object('wpsc-product');
@@ -633,7 +606,7 @@ function wpsc_update_variations() {
 		return;
 
 	//Setup postdata
-	$post_data = array( );
+	$post_data = array();
 	$post_data['edit_var_val'] = isset( $_POST['edit_var_val'] ) ? $_POST["edit_var_val"] : '';
 
 	//Add or delete variations

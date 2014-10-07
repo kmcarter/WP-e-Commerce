@@ -20,43 +20,43 @@ class wpsc_cart_item {
 	private static $variation_cache;
 
 	// each cart item contains a reference to the cart that it is a member of
-	var $cart;
+	public $cart;
 
 	// provided values
-	var $product_id;
-	var $variation_values;
-	var $product_variations;
-	var $variation_data;
-	var $quantity = 1;
-	var $provided_price;
+	public $product_id;
+	public $variation_values;
+	public $product_variations;
+	public $variation_data;
+	public $quantity = 1;
+	public $provided_price;
 
 
 	//values from the database
-	var $product_name;
-	var $category_list = array();
-	var $category_id_list = array();
-	var $unit_price;
-	var $total_price;
-	var $taxable_price = 0;
-	var $tax = 0;
-	var $weight = 0;
-	var $shipping = 0;
-	var $sku = null;
-	var $product_url;
-	var $image_id;
-	var $thumbnail_image;
-	var $custom_tax_rate = null;
-	var $meta = array();
+	public $product_name;
+	public $category_list = array();
+	public $category_id_list = array();
+	public $unit_price;
+	public $total_price;
+	public $taxable_price = 0;
+	public $tax = 0;
+	public $weight = 0;
+	public $shipping = 0;
+	public $sku = null;
+	public $product_url;
+	public $image_id;
+	public $thumbnail_image;
+	public $custom_tax_rate = null;
+	public $meta = array();
 
 	private $item_meta = array();
 
-	var $is_donation = false;
-	var $apply_tax = true;
-	var $priceandstock_id;
+	public $is_donation = false;
+	public $apply_tax = true;
+	public $priceandstock_id;
 
 	// user provided values
-	var $custom_message = null;
-	var $custom_file = null;
+	public $custom_message = null;
+	public $custom_file = null;
 
 	/**
 	 * compare cart item meta
@@ -72,7 +72,7 @@ class wpsc_cart_item {
 	}
 
 	/**
-	 * Add cart item meta value
+	 * Delete cart item meta value
 	 *
 	 * @access public
 	 * @param meta key name
@@ -97,13 +97,13 @@ class wpsc_cart_item {
 	 * @param meta key value
 	 * @return previous meta value if it existed, null otherwise
 	 */
-	function update_meta($key,$value=null) {
+	function update_meta( $key, $value = null ) {
 
-		if ( !isset( $value ) ) {
-			$result = $this->delete_meta($key);
+		if ( ! isset( $value ) ) {
+			$result = $this->delete_meta( $key );
 		} else {
-			$result = isset($this->meta[$key])?$this->meta[$key]:null;
-			$this->item_meta[$key] = $value;
+			$result = isset( $this->meta[ $key ] ) ? $this->meta[ $key ] : null;
+			$this->item_meta[ $key ] = $value;
 		}
 
 		return $result;
@@ -161,33 +161,36 @@ class wpsc_cart_item {
 	 * @param objcet  the cart object
 	 * @return boolean true on sucess, false on failure
 	 */
-	function wpsc_cart_item($product_id, $parameters, $cart) {
-		global $wpdb;
+	function __construct( $product_id, $parameters, $cart ) {
+
 		// still need to add the ability to limit the number of an item in the cart at once.
 		// each cart item contains a reference to the cart that it is a member of, this makes that reference
 		// The cart is in the cart item, which is in the cart, which is in the cart item, which is in the cart, which is in the cart item...
 		$this->cart = &$cart;
 
+		$parameters = wp_parse_args( $parameters, array(
+			'is_customisable' => false,
+			'file_data'       => null
+		) );
 
-		foreach($parameters as $name => $value) {
+		foreach ( $parameters as $name => $value ) {
 			$this->$name = $value;
 		}
 
+		$this->product_id = absint( $product_id );
 
-		$this->product_id = absint($product_id);
 		// to preserve backwards compatibility, make product_variations a reference to variations.
 		$this->product_variations =& $this->variation_values;
 
-
-
-		if(($parameters['is_customisable'] == true) && ($parameters['file_data'] != null)) {
-			$this->save_provided_file($this->file_data);
+		if ( $parameters['is_customisable'] == true && $parameters['file_data'] != null ) {
+			$this->save_provided_file( $this->file_data );
 		}
 
 		$this->refresh_item();
 
-		if ( ! has_action( 'wpsc_add_item', array( 'wpsc_cart_item', 'refresh_variation_cache' ) ) )
+		if ( ! has_action( 'wpsc_add_item', array( 'wpsc_cart_item', 'refresh_variation_cache' ) ) ) {
 			add_action( 'wpsc_add_item', array( 'wpsc_cart_item', 'refresh_variation_cache' ) );
+		}
 
 	}
 
@@ -354,8 +357,9 @@ class wpsc_cart_item {
 
 		$title = apply_filters( 'wpsc_cart_product_title', $title, $this->product_id, $this );
 
-		if ( $mode == 'display' )
+		if ( $mode == 'display' ) {
 			$title = apply_filters( 'the_title', $title, $this );
+		}
 
 		return $title;
 	}
@@ -450,7 +454,6 @@ class wpsc_cart_item {
 		}
 	}
 
-
 	/**
 	 * update_claimed_stock method
 	 * Updates the claimed stock table, to prevent people from having more than the existing stock in their carts
@@ -462,19 +465,13 @@ class wpsc_cart_item {
 		global $wpdb;
 
 		if($this->has_limited_stock == true) {
-			$current_datetime = date( "Y-m-d H:i:s" );
-			$wpdb->query($wpdb->prepare("REPLACE INTO `".WPSC_TABLE_CLAIMED_STOCK."`
-         ( `product_id` , `variation_stock_id` , `stock_claimed` , `last_activity` , `cart_id` )
-         VALUES
-         ('%d', '%d', '%s', '%s', '%s');",
-					$this->product_id,
-					$this->priceandstock_id,
-					$this->quantity,
-					$current_datetime,
-					$this->cart->unique_id));
+			$claimed_query = new WPSC_Claimed_Stock( array(
+				'product_id' => $this->product_id,
+				'cart_id'    => $this->cart->unique_id
+			) );
+			$claimed_query->update_claimed_stock( $this->quantity );
 		}
 	}
-
 
 	/**
 	 * save to database method
@@ -654,3 +651,63 @@ class _WPSC_Comparison {
 		return $diff;
 	}
 }
+
+/**
+ * Refreshes discount for coupons when a new product is added to the cart.
+ *
+ * This is a fairly generally expected workflow, though there are some instances wherein
+ * one might prefer to force the customer to "Update".  In those instances, this can be unhooked.
+ *
+ * @since  3.8.14
+ * @return void
+ */
+function wpsc_cart_item_refresh_coupon() {
+	$coupon = wpsc_get_customer_meta( 'coupon' );
+
+	if ( ! empty( $coupon ) ) {
+
+		wpsc_coupon_price( $coupon );
+	}
+}
+
+add_action( 'wpsc_refresh_item', 'wpsc_cart_item_refresh_coupon' );
+
+/**
+ * Filters the gateway count to return zero if a free cart is present.
+ *
+ * @access private
+ * @param  int     $count Number of active gateways.
+ *
+ * @since  3.9.0
+ * @return int     $count
+ */
+function _wpsc_free_checkout_gateway_count( $count ) {
+
+	if ( wpsc_is_free_cart() ) {
+		$count = 0;
+	}
+
+	return $count;
+}
+
+add_filter( 'wpsc_gateway_count', '_wpsc_free_checkout_gateway_count', 15 );
+
+/**
+ * Filters the custom gateway field to return an empty string if a free cart is present.
+ *
+ * @access private
+ * @param  string     $value Custom gateway field.
+ *
+ * @since  3.9.0
+ * @return string     $value
+ */
+function _wpsc_free_checkout_hidden_field( $value ) {
+
+	if ( wpsc_is_free_cart() ) {
+		$value = '';
+	}
+
+	return $value;
+}
+
+add_filter( 'wpsc_gateway_hidden_field_value', '_wpsc_free_checkout_hidden_field' , 15 );

@@ -107,6 +107,7 @@ global $wp_query, $wpdb;
 								<input type="text" id="wpsc_quantity_update_<?php echo wpsc_the_product_id(); ?>" name="wpsc_quantity_update" size="2" value="1" />
 								<input type="hidden" name="key" value="<?php echo wpsc_the_cart_item_key(); ?>"/>
 								<input type="hidden" name="wpsc_update_quantity" value="true" />
+								<input type='hidden' name='wpsc_ajax_action' value='wpsc_update_quantity' />
 							</div><!--close quantity_container-->
 							<?php endif ;?>
 							<input type="hidden" value="add_to_cart" name="wpsc_ajax_action" />
@@ -115,10 +116,13 @@ global $wp_query, $wpdb;
 							<?php if((get_option('hide_addtocart_button') == 0) &&  (get_option('addtocart_or_buynow') !='1')) : ?>
 								<?php if(wpsc_product_has_stock()) : ?>
 									<div class="wpsc_buy_button_container">
+
 											<?php if(wpsc_product_external_link(wpsc_the_product_id()) != '') : ?>
 											<?php $action = wpsc_product_external_link( wpsc_the_product_id() ); ?>
 											<input class="wpsc_buy_button" type="button" value="<?php echo wpsc_product_external_link_text( wpsc_the_product_id(), __( 'Buy Now', 'wpsc' ) ); ?>" onclick="return gotoexternallink('<?php echo $action; ?>', '<?php echo wpsc_product_external_link_target( wpsc_the_product_id() ); ?>')">
-											<?php else: ?>
+											<?php elseif ( wpsc_product_has_variations( wpsc_the_product_id() ) ) : ?>
+											<a href="<?php echo esc_url( wpsc_the_product_permalink() ); ?>" class="wpsc_buy_button"><?php _e( 'View Product', 'wpsc' )?></a>
+											<?php else : ?>
 										<input type="submit" value="<?php _e('Add To Cart', 'wpsc'); ?>" name="Buy" class="wpsc_buy_button" id="product_<?php echo wpsc_the_product_id(); ?>_submit_button" />
 											<?php endif; ?>
 										<div class="wpsc_loading_animation">

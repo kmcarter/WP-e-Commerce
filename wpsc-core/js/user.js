@@ -48,7 +48,7 @@ function submitform(frm, show_notification)
 		document.getElementById('alt_loadingimage').src = WPSC_CORE_IMAGES_URL + '/indicator.gif';
 		document.getElementById('alt_loadingindicator').style.visibility = 'visible';
 	}
-	
+
 	return false;
 }
 
@@ -368,12 +368,8 @@ function statusTextKeyPress(event){
 	}
 	return true;
 }
-// function switchmethod(key,key1){
-// // 	total=document.getElementById("shopping_cart_total_price").value;
-// 	ajax.post("index.php",usps_method_switch,"ajax=true&uspsswitch=true&key1="+key1+"&key="+key+"&total="+total);
-// }
 
-var usps_method_switch=function (results){
+var usps_method_switch = function (results){
 	shipping = results.split('---');
 	shipping1 = shipping[1];
 	jQuery("#checkout_total").html(shipping[0]);
@@ -463,7 +459,7 @@ jQuery(document).ready(
 				}
 			}
 			);
-		
+
 		function selectCustomGateway() {
 			var parent_div = jQuery(this).parents("div.custom_gateway");
 
@@ -472,7 +468,7 @@ jQuery(document).ready(
 			jQuery("div.custom_gateway table").not(jQuery('table',parent_div)).hide();
 			jQuery("div.custom_gateway table input").not(jQuery('table input',parent_div)).attr( 'disabled', true);
 		}
-		
+
 		jQuery("input.custom_gateway").change(
 			function() {
 				if(jQuery(this).is(':checked') == true) {
@@ -480,7 +476,7 @@ jQuery(document).ready(
 				}
 			}
 			);
-			
+
 		selectCustomGateway.call(jQuery('input.custom_gateway:checked'));
 	}
 	);

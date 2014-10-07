@@ -1,9 +1,9 @@
 <?php
 /**
-  * Plugin Name: WP e-Commerce
+  * Plugin Name: WP eCommerce
   * Plugin URI: http://getshopped.org/
-  * Description: A plugin that provides a WordPress Shopping Cart. See also: <a href="http://getshopped.org" target="_blank">GetShopped.org</a> | <a href="http://getshopped.org/forums/" target="_blank">Support Forum</a> | <a href="http://docs.getshopped.org/" target="_blank">Documentation</a>
-  * Version: 3.8.14-dev
+  * Description: A plugin that provides a WordPress Shopping Cart. See also: <a href="http://getshopped.org" target="_blank">GetShopped.org</a> | <a href="https://wordpress.org/support/plugin/wp-e-commerce/" target="_blank">Support Forum</a> | <a href="http://docs.getshopped.org/" target="_blank">Documentation</a>
+  * Version: 3.9-dev
   * Author: Instinct Entertainment
   * Author URI: http://getshopped.org/
   **/
@@ -17,8 +17,9 @@
  */
 class WP_eCommerce {
 	private $components = array(
-		'merchant'    => array(),
-		'marketplace' => array(),
+		'merchant'     => array(),
+		'marketplace'  => array(),
+		'theme-engine' => array(),
 	);
 
 	/**
@@ -27,7 +28,7 @@ class WP_eCommerce {
 	 * @uses add_action()   Attaches to 'plugins_loaded' hook
 	 * @uses add_action()   Attaches to 'wpsc_components' hook
 	 */
-	function __construct() {
+	public function __construct() {
 		add_action( 'plugins_loaded' , array( $this, 'init' ), 8 );
 		add_filter( 'wpsc_components', array( $this, '_register_core_components' ) );
 	}
@@ -42,7 +43,7 @@ class WP_eCommerce {
 	 * @uses do_action()                Calls 'wpsc_pre_init' which runs before WPEC initializes
 	 * @uses do_action()                Calls 'wpsc_init' runs just after WPEC initializes
 	 */
-	function init() {
+	public function init() {
 		// Previous to initializing
 		do_action( 'wpsc_pre_init' );
 
@@ -60,28 +61,28 @@ class WP_eCommerce {
 	 * New WPSC components API.
 	 *
 	 * Allows for modular coupling of different functionalities within WPSC.
-	 * This is the way we'll be introducing cutting-edge APIs
+	 * This is the way we'll be introducing cutting-edge APIs.
 	 *
 	 * @since 3.8.9.5
 	 *
-	 * @param   array $components
-	 * @return  array $components
+	 * @param  array $components
+	 * @return array $components
 	 */
 	public function _register_core_components( $components ) {
 		$components['merchant']['core-v2'] = array(
-			'title'    => __( 'WP e-Commerce Merchant API v2', 'wpsc' ),
+			'title'    => __( 'WP eCommerce Merchant API v2', 'wpsc' ),
 			'includes' =>
 				WPSC_FILE_PATH . '/wpsc-components/merchant-core-v2/merchant-core-v2.php'
 		);
 
-		$components['theme-engine']['core-v1'] = array(
-			'title'    => __( 'WP e-Commerce Theme Engine v1', 'wpsc' ),
+		$components['merchant']['core-v3'] = array(
+			'title'    => __( 'WP eCommerce Merchant API v3', 'wpsc' ),
 			'includes' =>
-				WPSC_FILE_PATH . '/wpsc-components/theme-engine-v1/theme-engine-v1.php'
+				WPSC_FILE_PATH . '/wpsc-components/merchant-core-v3/merchant-core-v3.php'
 		);
 
 		$components['marketplace']['core-v1'] = array(
-			'title'    => __( 'WP e-Commerce Marketplace API v1', 'wpsc' ),
+			'title'    => __( 'WP eCommerce Marketplace API v1', 'wpsc' ),
 			'includes' =>
 				WPSC_FILE_PATH . '/wpsc-components/marketplace-core-v1/marketplace-core-v1.php'
 		);
@@ -97,7 +98,7 @@ class WP_eCommerce {
 	 * @uses plugin_basename()          Gets the basename of a plugin (extracts the name of a plugin from its filename)
 	 * @uses do_action()                Calls 'wpsc_started' which runs after WPEC has started
 	 */
-	function start() {
+	public function start() {
 		// Set the core file path
 		define( 'WPSC_FILE_PATH', dirname( __FILE__ ) );
 
@@ -116,7 +117,7 @@ class WP_eCommerce {
 		do_action( 'wpsc_started' );
 	}
 
-	function setup_table_names() {
+	public function setup_table_names() {
 		global $wpdb;
 		$wpdb->wpsc_meta                = WPSC_TABLE_META;
 		$wpdb->wpsc_also_bought         = WPSC_TABLE_ALSO_BOUGHT;
@@ -127,13 +128,13 @@ class WP_eCommerce {
 		$wpdb->wpsc_currency_list       = WPSC_TABLE_CURRENCY_LIST;
 		$wpdb->wpsc_purchase_logs       = WPSC_TABLE_PURCHASE_LOGS;
 		$wpdb->wpsc_checkout_forms      = WPSC_TABLE_CHECKOUT_FORMS;
-		$wpdb->wpsc_cart_itemmeta       = WPSC_TABLE_CART_ITEM_META; // required for _get_meta_table()
-		$wpdb->wpsc_cart_item_meta      = WPSC_TABLE_CART_ITEM_META;
-    $wpdb->wpsc_purchasemeta        = WPSC_TABLE_PURCHASE_META; // required for _get_meta_table()
-		$wpdb->wpsc_purchase_meta       = WPSC_TABLE_PURCHASE_META;
 		$wpdb->wpsc_product_rating      = WPSC_TABLE_PRODUCT_RATING;
 		$wpdb->wpsc_download_status     = WPSC_TABLE_DOWNLOAD_STATUS;
 		$wpdb->wpsc_submitted_form_data = WPSC_TABLE_SUBMITTED_FORM_DATA;
+		$wpdb->wpsc_cart_itemmeta       = WPSC_TABLE_CART_ITEM_META;
+		$wpdb->wpsc_purchasemeta        = WPSC_TABLE_PURCHASE_META;
+		$wpdb->wpsc_visitors            = WPSC_TABLE_VISITORS;
+		$wpdb->wpsc_visitormeta         = WPSC_TABLE_VISITOR_META;
 	}
 
 	/**
@@ -147,7 +148,7 @@ class WP_eCommerce {
 	 * @uses wpsc_core_constants_uploads()              Set the upload related constants
 	 * @uses do_action()                                Calls 'wpsc_constants' which runs after the WPEC constants are defined
 	 */
-	function constants() {
+	public function constants() {
 		// Define globals and constants used by wp-e-commerce
 		require_once( WPSC_FILE_PATH . '/wpsc-core/wpsc-constants.php' );
 
@@ -182,18 +183,25 @@ class WP_eCommerce {
 	 * @uses apply_filters()    Calls 'wpsc_components' private merchant components
 	 * @uses do_action()        Calls 'wpsc_includes' which runs after WPEC files have been included
 	 */
-	function includes() {
-		require_once( WPSC_FILE_PATH . '/wpsc-includes/wpsc-meta-init.php' );
+	public function includes() {
+		require_once( WPSC_FILE_PATH . '/wpsc-includes/wpsc-meta-util.php'      );
+		require_once( WPSC_FILE_PATH . '/wpsc-includes/customer.php'            );
+		require_once( WPSC_FILE_PATH . '/wpsc-includes/wpsc-meta-customer.php'  );
+		require_once( WPSC_FILE_PATH . '/wpsc-includes/wpsc-meta-visitor.php'   );
+		require_once( WPSC_FILE_PATH . '/wpsc-includes/wpsc-meta-cart-item.php' );
 		require_once( WPSC_FILE_PATH . '/wpsc-core/wpsc-functions.php' );
 		require_once( WPSC_FILE_PATH . '/wpsc-core/wpsc-installer.php' );
-		require_once( WPSC_FILE_PATH . '/wpsc-core/wpsc-includes.php' );
+		require_once( WPSC_FILE_PATH . '/wpsc-core/wpsc-includes.php'  );
 
 		$this->components = apply_filters( 'wpsc_components', $this->components );
 
 		foreach ( $this->components as $type => $registered ) {
 			foreach ( $registered as $component ) {
-				if ( ! is_array( $component['includes'] ) )
+
+				if ( ! is_array( $component['includes'] ) ) {
 					$component['includes'] = array( $component['includes' ] );
+				}
+
 				foreach ( $component['includes'] as $include ) {
 					require_once( $include );
 				}
@@ -220,7 +228,7 @@ class WP_eCommerce {
 	 * @uses wpsc_core_load_page_titles()           Loads the core WPEC pagetitles
 	 * @uses do_action()                            Calls 'wpsc_loaded' which runs after WPEC is fully loaded
 	 */
-	function load() {
+	public function load() {
 		// Before setup
 		do_action( 'wpsc_pre_load' );
 
@@ -230,8 +238,10 @@ class WP_eCommerce {
 		// Setup the core WPEC globals
 		wpsc_core_setup_globals();
 
-		// Setup the customer ID just in case to make sure it's set up correctly
 		add_action( 'init', '_wpsc_action_setup_customer', 1 );
+
+		// WPEC is ready to use as soon as WordPress and customer is setup and loaded
+		add_action( 'init', array( &$this, '_wpsc_fire_ready_action' ), 100 );
 
 		// Load the purchase log statuses
 		wpsc_core_load_purchase_log_statuses();
@@ -249,6 +259,11 @@ class WP_eCommerce {
 		do_action( 'wpsc_loaded' );
 	}
 
+	public function _wpsc_fire_ready_action() {
+		// WPEC is ready to use as soon as WordPress and customer is setup and loaded
+		do_action( 'wpsc_ready' );
+	}
+
 	/**
 	 * WPEC Activation Hook
 	 *
@@ -256,26 +271,22 @@ class WP_eCommerce {
 	 * @uses wp_die()                 Kills loading and returns the HTML
 	 * @uses wpsc_install()           Performs checks to see if this is a clean install or not
 	 */
-	function install() {
-		global $wp_version;
+	public function install() {
 
-		if ( ( float ) $wp_version < 3.0 ) {
-			 deactivate_plugins( plugin_basename( __FILE__ ) ); // Deactivate ourselves
-			 wp_die( __( 'Looks like you\'re running an older version of WordPress, you need to be running at least WordPress 3.0 to use WP e-Commerce 3.8', 'wpsc' ), __( 'WP e-Commerce 3.8 not compatible', 'wpsc' ), array( 'back_link' => true ) );
+		if ( ! defined( 'WPSC_FILE_PATH' ) ) {
+			define( 'WPSC_FILE_PATH', dirname( __FILE__ ) );
 		}
-		define( 'WPSC_FILE_PATH', dirname( __FILE__ ) );
+
 		require_once( WPSC_FILE_PATH . '/wpsc-core/wpsc-installer.php' );
 		$this->constants();
 		wpsc_install();
-
 	}
 
 	/**
-	 * Runs the WPEC deactivation routines which basically just removes the cron
-	 * jobs that WPEC has set.
+	 * Runs the WPEC deactivation routines.
 	 *
-	 * @uses wp_get_schedules()           Retrieves all filtered Cron recurrences
-	 * @uses wp_clear_scheduled_hook()    Removes any hooks on cron
+	 * @uses wp_get_schedules()           Retrieves all filtered WP_Cron recurrences
+	 * @uses wp_clear_scheduled_hook()    Removes any hooks on WP_Cron
 	 */
 	public function deactivate() {
 		foreach ( wp_get_schedules() as $cron => $schedule ) {

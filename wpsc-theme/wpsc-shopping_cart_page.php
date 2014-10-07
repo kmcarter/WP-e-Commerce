@@ -7,7 +7,7 @@ if( $coupon_num )
    $wpsc_coupons = new wpsc_coupons( $coupon_num );
 
 if(wpsc_cart_item_count() < 1) :
-   _e('Oops, there is nothing in your cart.', 'wpsc') . "<a href=" . esc_url( get_option( "product_list_url" ) ) . ">" . __('Please visit our shop', 'wpsc') . "</a>";
+   echo __('Oops, there is nothing in your cart.', 'wpsc') . '<a href=' . esc_url( get_option( 'product_list_url', '' ) ) . ">" . __('Please visit our shop', 'wpsc') . '</a>';
    return;
 endif;
 ?>
@@ -31,32 +31,32 @@ endif;
        ?>
       <?php  //this displays the confirm your order html ?>
 
-	  <?php do_action ( "wpsc_before_checkout_cart_row" ); ?>
+     <?php do_action ( "wpsc_before_checkout_cart_row" ); ?>
       <tr class="product_row product_row_<?php echo wpsc_the_cart_item_key(); ?> <?php echo $alt_class;?>">
 
          <td class="firstcol wpsc_product_image wpsc_product_image_<?php echo wpsc_the_cart_item_key(); ?>">
          <?php if('' != wpsc_cart_item_image()): ?>
-			<?php do_action ( "wpsc_before_checkout_cart_item_image" ); ?>
+         <?php do_action ( "wpsc_before_checkout_cart_item_image" ); ?>
             <img src="<?php echo wpsc_cart_item_image(); ?>" alt="<?php echo wpsc_cart_item_name(); ?>" title="<?php echo wpsc_cart_item_name(); ?>" class="product_image" />
-			<?php do_action ( "wpsc_after_checkout_cart_item_image" ); ?>
+         <?php do_action ( "wpsc_after_checkout_cart_item_image" ); ?>
          <?php else:
          /* I dont think this gets used anymore,, but left in for backwards compatibility */
          ?>
             <div class="item_no_image">
-				<?php do_action ( "wpsc_before_checkout_cart_item_image" ); ?>
+            <?php do_action ( "wpsc_before_checkout_cart_item_image" ); ?>
                <a href="<?php echo esc_url( wpsc_the_product_permalink() ); ?>">
                <span><?php _e('No Image','wpsc'); ?></span>
 
                </a>
-				<?php do_action ( "wpsc_after_checkout_cart_item_image" ); ?>
+            <?php do_action ( "wpsc_after_checkout_cart_item_image" ); ?>
             </div>
          <?php endif; ?>
          </td>
 
          <td class="wpsc_product_name wpsc_product_name_<?php echo wpsc_the_cart_item_key(); ?>">
-			<?php do_action ( "wpsc_before_checkout_cart_item_name" ); ?>
+         <?php do_action ( "wpsc_before_checkout_cart_item_name" ); ?>
             <a href="<?php echo esc_url( wpsc_cart_item_url() );?>"><?php echo wpsc_cart_item_name(); ?></a>
-			<?php do_action ( "wpsc_after_checkout_cart_item_name" ); ?>
+         <?php do_action ( "wpsc_after_checkout_cart_item_name" ); ?>
          </td>
 
          <td class="wpsc_product_quantity wpsc_product_quantity_<?php echo wpsc_the_cart_item_key(); ?>">
@@ -64,6 +64,7 @@ endif;
                <input type="text" name="quantity" size="2" value="<?php echo wpsc_cart_item_quantity(); ?>" />
                <input type="hidden" name="key" value="<?php echo wpsc_the_cart_item_key(); ?>" />
                <input type="hidden" name="wpsc_update_quantity" value="true" />
+               <input type='hidden' name='wpsc_ajax_action' value='wpsc_update_quantity' />
                <input type="submit" value="<?php _e('Update', 'wpsc'); ?>" />
             </form>
          </td>
@@ -77,6 +78,7 @@ endif;
                <input type="hidden" name="quantity" value="0" />
                <input type="hidden" name="key" value="<?php echo wpsc_the_cart_item_key(); ?>" />
                <input type="hidden" name="wpsc_update_quantity" value="true" />
+               <input type='hidden' name='wpsc_ajax_action' value='wpsc_update_quantity' />
                <input type="submit" value="<?php _e('Remove', 'wpsc'); ?>" />
             </form>
          </td>
@@ -349,45 +351,13 @@ endif;
                   		$checked = 'checked="checked"';
                    ?>
 					<label for='shippingSameBilling'><?php _e('Same as billing address:','wpsc'); ?></label>
-					<input type='checkbox' value='true' name='shippingSameBilling' id='shippingSameBilling' <?php echo $checked; ?> />
+					<input type='checkbox'  data-wpsc-meta-key="shippingSameBilling" value='true' class= "wpsc-visitor-meta" name='shippingSameBilling' id='shippingSameBilling' <?php echo $checked; ?> />
 					<br/><span id="shippingsameasbillingmessage"><?php _e('Your order will be shipped to the billing address', 'wpsc'); ?></span>
                   </td>
                </tr>
                <?php endif;
 
             // Not a header so start display form fields
-            }elseif(wpsc_disregard_shipping_state_fields()){
-            ?>
-               <tr class='wpsc_hidden'>
-                  <td class='<?php echo wpsc_checkout_form_element_id(); ?>'>
-                     <label for='<?php echo wpsc_checkout_form_element_id(); ?>'>
-                     <?php echo wpsc_checkout_form_name();?>
-                     </label>
-                  </td>
-                  <td>
-                     <?php echo wpsc_checkout_form_field();?>
-                      <?php if(wpsc_the_checkout_item_error() != ''): ?>
-                             <p class='validation-error'><?php echo wpsc_the_checkout_item_error(); ?></p>
-                     <?php endif; ?>
-                  </td>
-               </tr>
-            <?php
-            }elseif(wpsc_disregard_billing_state_fields()){
-            ?>
-               <tr class='wpsc_hidden'>
-                  <td class='<?php echo wpsc_checkout_form_element_id(); ?>'>
-                     <label for='<?php echo wpsc_checkout_form_element_id(); ?>'>
-                     <?php echo wpsc_checkout_form_name();?>
-                     </label>
-                  </td>
-                  <td>
-                     <?php echo wpsc_checkout_form_field();?>
-                      <?php if(wpsc_the_checkout_item_error() != ''): ?>
-                             <p class='validation-error'><?php echo wpsc_the_checkout_item_error(); ?></p>
-                     <?php endif; ?>
-                  </td>
-               </tr>
-            <?php
             }elseif( $wpsc_checkout->checkout_item->unique_name == 'billingemail'){ ?>
                <?php $email_markup =
                "<div class='wpsc_email_address'>

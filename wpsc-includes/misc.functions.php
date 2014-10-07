@@ -34,16 +34,50 @@ function wpsc_find_purchlog_status_name( $purchlog_status ) {
  * @param string $return_value either 'name' or 'code' depending on what you want returned
  */
 function wpsc_get_state_by_id( $id, $return_value ) {
-	global $wpdb;
-	$sql = $wpdb->prepare( "SELECT " . esc_sql( $return_value ) . " FROM `" . WPSC_TABLE_REGION_TAX . "` WHERE `id`= %d", $id );
-	$value = $wpdb->get_var( $sql );
+
+	$region = new WPSC_Region( WPSC_Countries::get_country_id_by_region_id( $id ), $id );
+
+	$value = '';
+
+	if ( $return_value == 'name' ) {
+		$value = $region->get_name();
+	} elseif ( $return_value == 'code' ) {
+		$value = $region->get_code();
+	}
+
 	return $value;
 }
 
-function wpsc_country_has_state($country_code){
-	global $wpdb;
-	$country_data = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `".WPSC_TABLE_CURRENCY_LIST."` WHERE `isocode`= %s LIMIT 1", $country_code ), ARRAY_A );
+function wpsc_country_has_state( $country_code ){
+
+	$country_data = WPSC_Countries::get_country( $country_code, true ); // TODO this function does not seem to do what it's name indicates? What's up with that.
 	return $country_data;
+}
+
+/**
+ * Convert time interval to seconds.
+ *
+ * Takes a number an unit of time (hour/day/week) and converts it to seconds.
+ * It allows decimal intervals like 1.5 days.
+ *
+ * @since   3.8.14
+ * @access  public
+ *
+ * @param   int  $time      Stock keeping time.
+ * @param   int  $interval  Stock keeping interval unit (hour/day/week).
+ * @return  int             Seconds.
+ *
+ * @uses  MINUTE_IN_SECONDS, HOUR_IN_SECONDS, DAY_IN_SECONDS, WEEK_IN_SECONDS, YEAR_IN_SECONDS
+ */
+function wpsc_convert_time_interval_to_seconds( $time, $interval ) {
+	$convert = array(
+		'minute' => MINUTE_IN_SECONDS,
+		'hour'   => HOUR_IN_SECONDS,
+		'day'    => DAY_IN_SECONDS,
+		'week'   => WEEK_IN_SECONDS,
+		'year'   => YEAR_IN_SECONDS,
+	);
+	return floor( $time * $convert[ $interval ] );
 }
 
 /**
@@ -130,14 +164,14 @@ function wpsc_get_country_form_id_by_type($type){
 }
 
 function wpsc_get_country( $country_code ) {
-	$country = new WPSC_Country( $country_code, 'isocode' );
-	return $country->get( 'country' );
+	$wpsc_country = new WPSC_Country( $country_code );
+	return $wpsc_country->get_name();
 }
 
 function wpsc_get_region( $region_id ) {
-	global $wpdb;
-	$region = $wpdb->get_var( $wpdb->prepare( "SELECT `name` FROM `" . WPSC_TABLE_REGION_TAX . "` WHERE `id` IN(%d)", $region_id ) );
-	return $region;
+	$country_id = WPSC_Countries::get_country_id_by_region_id( $region_id );
+	$wpsc_region = new WPSC_Region( $country_id, $region_id );
+	return $wpsc_region->get_name();
 }
 
 function nzshpcrt_display_preview_image() {
@@ -657,7 +691,7 @@ function wpsc_get_extension( $str ) {
  *   trigger or false to not trigger error.
  *
  * @param string $function The function that was called
- * @param string $version The version of WP e-Commerce that deprecated the function
+ * @param string $version The version of WP eCommerce that deprecated the function
  * @param string $replacement Optional. The function that should have been called
  */
 function _wpsc_deprecated_function( $function, $version, $replacement = null ) {
@@ -667,7 +701,7 @@ function _wpsc_deprecated_function( $function, $version, $replacement = null ) {
 	if ( WP_DEBUG && apply_filters( 'wpsc_deprecated_function_trigger_error', true ) ) {
 		if ( ! is_null( $replacement ) )
 			trigger_error(
-				sprintf( __( '%1$s is <strong>deprecated</strong> since WP e-Commerce version %2$s! Use %3$s instead.', 'wpsc' ),
+				sprintf( __( '%1$s is <strong>deprecated</strong> since WP eCommerce version %2$s! Use %3$s instead.', 'wpsc' ),
 					$function,
 					$version,
 					$replacement
@@ -675,7 +709,7 @@ function _wpsc_deprecated_function( $function, $version, $replacement = null ) {
 			);
 		else
 			trigger_error(
-				sprintf( __( '%1$s is <strong>deprecated</strong> since WP e-Commerce version %2$s with no alternative available.', 'wpsc' ),
+				sprintf( __( '%1$s is <strong>deprecated</strong> since WP eCommerce version %2$s with no alternative available.', 'wpsc' ),
 					$function,
 					$version
 				)
@@ -703,7 +737,7 @@ function _wpsc_deprecated_function( $function, $version, $replacement = null ) {
  *   trigger or false to not trigger error.
  *
  * @param string $file The file that was included
- * @param string $version The version of WP e-Commerce that deprecated the file
+ * @param string $version The version of WP eCommerce that deprecated the file
  * @param string $replacement Optional. The file that should have been included based on ABSPATH
  * @param string $message Optional. A message regarding the change
  */
@@ -716,7 +750,7 @@ function _wpsc_deprecated_file( $file, $version, $replacement = null, $message =
 		$message = empty( $message ) ? '' : ' ' . $message;
 		if ( ! is_null( $replacement ) )
 			trigger_error(
-				sprintf( __( '%1$s is <strong>deprecated</strong> since WP e-Commerce version %2$s! Use %3$s instead.', 'wpsc' ),
+				sprintf( __( '%1$s is <strong>deprecated</strong> since WP eCommerce version %2$s! Use %3$s instead.', 'wpsc' ),
 					$file,
 					$version,
 					$replacement
@@ -724,7 +758,7 @@ function _wpsc_deprecated_file( $file, $version, $replacement = null, $message =
 			);
 		else
 			trigger_error(
-				sprintf( __( '%1$s is <strong>deprecated</strong> since WP e-Commerce version %2$s with no alternative available.', 'wpsc' ),
+				sprintf( __( '%1$s is <strong>deprecated</strong> since WP eCommerce version %2$s with no alternative available.', 'wpsc' ),
 					$file,
 					$version
 				) . $message
@@ -760,7 +794,7 @@ function _wpsc_deprecated_file( $file, $version, $replacement = null, $message =
  *   trigger or false to not trigger error.
  *
  * @param string $function The function that was called
- * @param string $version The version of WP e-Commerce that deprecated the argument used
+ * @param string $version The version of WP eCommerce that deprecated the argument used
  * @param string $message Optional. A message regarding the change.
  */
 function _wpsc_deprecated_argument( $function, $version, $message = null ) {
@@ -772,7 +806,7 @@ function _wpsc_deprecated_argument( $function, $version, $message = null ) {
 		if ( ! is_null( $message ) )
 			trigger_error(
 				sprintf(
-					__( '%1$s was called with an argument that is <strong>deprecated</strong> since WP e-Commerce version %2$s! %3$s', 'wpsc' ),
+					__( '%1$s was called with an argument that is <strong>deprecated</strong> since WP eCommerce version %2$s! %3$s', 'wpsc' ),
 					$function,
 					$version,
 					$message
@@ -781,7 +815,7 @@ function _wpsc_deprecated_argument( $function, $version, $message = null ) {
 		else
 			trigger_error(
 				sprintf(
-					__( '%1$s was called with an argument that is <strong>deprecated</strong> since WP e-Commerce version %2$s with no alternative available.', 'wpsc' ),
+					__( '%1$s was called with an argument that is <strong>deprecated</strong> since WP eCommerce version %2$s with no alternative available.', 'wpsc' ),
 					$function,
 					$version
 				)
@@ -807,7 +841,7 @@ function _wpsc_deprecated_argument( $function, $version, $message = null ) {
  *
  * @param string $function The function that was called.
  * @param string $message A message explaining what has been done incorrectly.
- * @param string $version The version of WP e-Commerce where the message was added.
+ * @param string $version The version of WP eCommerce where the message was added.
  */
 function _wpsc_doing_it_wrong( $function, $message, $version ) {
 
@@ -817,7 +851,7 @@ function _wpsc_doing_it_wrong( $function, $message, $version ) {
 	if ( WP_DEBUG && apply_filters( 'wpsc_doing_it_wrong_trigger_error', true ) ) {
 		$version =   is_null( $version )
 		           ? ''
-		           : sprintf( __( '(This message was added in WP e-Commerce version %s.)', 'wpsc' ), $version );
+		           : sprintf( __( '(This message was added in WP eCommerce version %s.)', 'wpsc' ), $version );
 		$message .= ' ' . __( 'Please see <a href="http://codex.wordpress.org/Debugging_in_WordPress">Debugging in WordPress</a> for more information.', 'wpsc' );
 		trigger_error(
 			sprintf(

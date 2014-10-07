@@ -25,6 +25,7 @@
 					<input type="hidden" name="quantity" value="0" />
 					<input type="hidden" name="key" value="<?php echo wpsc_the_cart_item_key(); ?>" />
 					<input type="hidden" name="wpsc_update_quantity" value="true" />
+					<input type='hidden' name='wpsc_ajax_action' value='wpsc_update_quantity' />
 					<input class="remove_button" type="submit" />
 				</form></td>
 			</tr>
@@ -58,9 +59,3 @@
 		<a target="_parent" href="<?php echo esc_url( get_option( 'product_list_url' ) ); ?>" class="visitshop" title="<?php esc_html_e('Visit Shop', 'wpsc'); ?>"><?php esc_html_e('Visit the shop', 'wpsc'); ?></a>
 	</p>
 <?php endif; ?>
-
-<?php
-wpsc_google_checkout();
-
-
-?>

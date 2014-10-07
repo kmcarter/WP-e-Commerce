@@ -1,9 +1,10 @@
 <?php
-add_action( 'save_post', 'wpsc_refresh_page_urls', 10, 2 );
+add_action( 'save_post'        , 'wpsc_refresh_page_urls', 10, 2 );
 add_action( 'wpsc_theme_footer', 'wpsc_fancy_notifications' );
 
-if ( get_option( 'wpsc_replace_page_title' ) == 1 )
+if ( get_option( 'wpsc_replace_page_title' ) == 1 ) {
 	add_filter( 'wp_title', 'wpsc_replace_wp_title', 10, 2 );
+}
 
 add_filter( 'post_type_link', 'wpsc_product_link', 10, 3 );
 
@@ -18,6 +19,7 @@ add_filter( 'post_type_link', 'wpsc_product_link', 10, 3 );
  */
 function wpsc_product_link( $permalink, $post, $leavename ) {
 	global $wp_query, $wpsc_page_titles, $wpsc_query, $wp_current_filter;
+
 	$rewritecode = array(
 		'%wpsc_product_category%',
 		$leavename ? '' : '%postname%',
@@ -42,13 +44,16 @@ function wpsc_product_link( $permalink, $post, $leavename ) {
 		$post    = get_post( $post_id );
 	}
 
-	$permalink_structure = get_option( 'permalink_structure' );
+	global $wp_rewrite;
+
+	$our_permalink_structure = $wp_rewrite->root;
 
 	// This may become customiseable later
-	$our_permalink_structure = str_replace( basename( home_url() ), '', $wpsc_page_titles['products'] ) . "/%wpsc_product_category%/%postname%/";
-	// Mostly the same conditions used for posts, but restricted to items with a post type of "wpsc-product "
+	$our_permalink_structure .= str_replace( basename( home_url() ), '', $wpsc_page_titles['products'] ) . "/%wpsc_product_category%/%postname%/";
 
-	if ( '' != $permalink_structure && !in_array( $post->post_status, array( 'draft', 'pending' ) ) ) {
+	// Mostly the same conditions used for posts, but restricted to items with a post type of "wpsc-product "
+	if ( $wp_rewrite->using_permalinks() && ! in_array( $post->post_status, array( 'draft', 'pending' ) ) ) {
+
 		$product_categories = wpsc_get_product_terms( $post_id, 'wpsc_product_category' );
 		$product_category_slugs = array( );
 		foreach ( $product_categories as $product_category ) {
@@ -56,7 +61,7 @@ function wpsc_product_link( $permalink, $post, $leavename ) {
 		}
 		// If the product is associated with multiple categories, determine which one to pick
 		if ( count( $product_categories ) == 0 ) {
-			$category_slug = 'uncategorized';
+			$category_slug = apply_filters( 'wpsc_uncategorized_product_category', 'uncategorized' );
 		} elseif ( count( $product_categories ) > 1 ) {
 			if ( (isset( $wp_query->query_vars['products'] ) && $wp_query->query_vars['products'] != null) && in_array( $wp_query->query_vars['products'], $product_category_slugs ) ) {
 				$product_category = $wp_query->query_vars['products'];
@@ -116,6 +121,7 @@ function wpsc_product_link( $permalink, $post, $leavename ) {
 
 		$permalink = home_url( $permalink );
 	}
+
 	return apply_filters( 'wpsc_product_permalink', $permalink, $post->ID );
 }
 
@@ -171,6 +177,21 @@ function wpsc_parent_category_image($show_thumbnails , $category_image , $width,
 	}
 }
 /// category template tags start here
+
+/**
+ * Returns true if you're on a tag that is a WPeC tag
+ *
+ * @since 3.9
+ *
+ * @uses is_tax()           Returns true/false given taxonomy and takes second parameter of term
+ * @param string|array|int  $term   optional    The term you could be checking for
+ * @return bool             True if you are on a product_tag false if not
+ */
+function wpsc_is_in_tag( $term = '' ) {
+
+	return is_tax( 'product_tag', $term );
+
+}
 
 /**
 * wpsc starts category query function
@@ -230,6 +251,7 @@ function wpsc_print_category_id() {
 */
 function wpsc_print_category_classes($category_to_print = false, $echo = true) {
 	global $wp_query, $wpdb;
+	$result = '';
 
 	//if we are in wpsc category page then get the current category
 	$curr_cat = false;
@@ -254,11 +276,16 @@ function wpsc_print_category_classes($category_to_print = false, $echo = true) {
 		elseif ( in_array($category_to_print['term_id'], $curr_cat_parents) )
 			$result = ' wpsc-cat-ancestor ';
 	}
-	if( isset($result) )
-		if($echo)
+
+	$result = apply_filters( 'wpsc_print_category_classes', $result, $category_to_print );
+
+	if ( ! empty ( $result ) ) {
+		if ( $echo ) {
 			echo $result;
-		else
+		} else {
 			return $result;
+		}
+	}
 }
 
 /**
@@ -488,16 +515,17 @@ function wpsc_category_url($category_id, $permalink_compatibility = false) {
 }
 
 
-function wpsc_is_in_category() {
-  global $wpdb, $wp_query;
-  $is_in_category = false;
-  if(isset($wp_query->query_vars['wpsc_product_category'] ) && !empty($wp_query->query_vars['wpsc_product_category'])) {
-    $is_in_category = true;
-  } else if(isset($_GET['wpsc_product_category']) && !empty($_GET['wpsc_product_category'])) {
-    $is_in_category = true;
-  }
+/**
+ * Returns true if you're on a category that is a WPeC category
+ *
+ * @uses is_tax()           Returns true/false given taxonomy and takes second parameter of term
+ * @param string|array|int  $term   optional    The term you could be checking for
+ * @return bool             True if you are on a wpsc_product_category false if not
+ */
+function wpsc_is_in_category( $term = '' ) {
 
-  return $is_in_category;
+	return is_tax( 'wpsc_product_category', $term );
+
 }
 
 
@@ -530,24 +558,6 @@ function wpsc_category_id($category_slug = '') {
 		return false;
 	}
 }
-
-
-/**
-* wpsc_category_image function, Gets the category image or returns false
-* @param integer category ID, can be 0
-* @return string url to the category image
-*/
-function wpsc_category_image($category_id = null) {
-	if($category_id < 1)
-		$category_id = wpsc_category_id();
-	$category_image = wpsc_get_categorymeta($category_id, 'image');
-	$category_path = WPSC_CATEGORY_DIR.basename($category_image);
-	$category_url = WPSC_CATEGORY_URL.basename($category_image);
-	if(file_exists($category_path) && is_file($category_path))
-		return $category_url;
-	return false;
-}
-
 
 /**
 * wpsc_category_description function, Gets the category description
@@ -646,6 +656,10 @@ function wpsc_buy_now_button( $product_id, $replaced_shortcode = false ) {
 			$src     = apply_filters( 'wpsc_buy_now_button_src', _x( 'https://www.paypal.com/en_US/i/btn/btn_buynow_LG.gif', 'PayPal Buy Now Button', 'wpsc' ) );
 			$classes = apply_filters( 'wpsc_buy_now_button_class', "wpsc-buy-now-form wpsc-buy-now-form-{$product_id}" );
 
+            $classes_array = array_map( 'sanitize_html_class', explode( ' ', $classes ) );
+
+            $classes = implode( ' ', $classes_array );
+
 			$button_html = sprintf( '<input%1$s class="wpsc-buy-now-button wpsc-buy-now-button-%2$s" type="image" name="submit" border="0" src="%3$s" alt="%4$s" />',
 				disabled( $has_variants, true, false ),
 				esc_attr( $product_id ),
@@ -655,7 +669,7 @@ function wpsc_buy_now_button( $product_id, $replaced_shortcode = false ) {
 
 			$button_html = apply_filters( 'wpsc_buy_now_button_html', $button_html, $product_id );
 ?>
-			<form class="<?php echo esc_attr( sanitize_html_class( $classes, '' ) ); ?>" id="buy-now-product_<?php echo $product_id; ?>" target="paypal" action="<?php echo esc_url( home_url() ); ?>" method="post">
+			<form class="<?php echo( $classes ); ?>" id="buy-now-product_<?php echo $product_id; ?>" target="paypal" action="<?php echo esc_url( home_url() ); ?>" method="post">
 				<input type="hidden" name="wpsc_buy_now_callback" value="1" />
 				<input type="hidden" name="product_id" value="<?php echo esc_attr( $product_id ); ?>" />
 <?php

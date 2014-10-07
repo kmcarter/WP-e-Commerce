@@ -37,43 +37,183 @@ function wpsc_check_uniquenames() {
    }
 }
 
+/** Does the purchaselog have tracking information
+ * @return boolean
+ */
 function wpsc_purchlogs_has_tracking() {
-   global $wpdb, $wpsc_shipping_modules, $purchlogitem;
-   $custom_shipping = get_option( 'custom_shipping_options' );
-   if ( in_array( 'nzpost', (array)$custom_shipping ) && $purchlogitem->extrainfo->track_id != '' ) {
-	  return true;
-   } else {
-	  return false;
-   }
+	global $purchlogitem;
+	if ( ! empty( $purchlogitem->extrainfo->track_id ) ) {
+		return true;
+	} else {
+		return false;
+	}
 }
 
+/**
+ * * @return string  current tracking id or or empty string if there isn't a tracking id
+ */
 function wpsc_purchlogitem_trackid() {
-   global $purchlogitem;
-   return esc_attr( $purchlogitem->extrainfo->track_id );
+	global $purchlogitem;
+	return esc_attr( empty( $purchlogitem->extrainfo->track_id ) ? '' : $purchlogitem->extrainfo->track_id );
 }
 
+/** Purchase shipping status
+ * @return string shipping status or empty string
+ */
 function wpsc_purchlogitem_trackstatus() {
-   global $wpdb, $wpsc_shipping_modules, $purchlogitem;
-   $custom_shipping = get_option( 'custom_shipping_options' );
-   if ( in_array( 'nzpost', (array)$custom_shipping ) && $purchlogitem->extrainfo->track_id != '' ) {
-	  $status = $wpsc_shipping_modules['nzpost']->getStatus( $purchlogitem->extrainfo->track_id );
-   }
+	global $wpsc_shipping_modules, $purchlogitem;
 
-   return $status;
+	if ( is_callable( $wpsc_shipping_modules [$purchlogitem->extrainfo->shipping_method]->getStatus ) && ! empty( $purchlogitem->extrainfo->track_id ) ) {
+		$status = $wpsc_shipping_modules [$purchlogitem->extrainfo->shipping_method]->getStatus( $purchlogitem->extrainfo->track_id );
+	} else {
+		$status = '';
+	}
+
+	return $status;
 }
 
+/** Tracking history for purchase
+ * @return string tracking history or empty string
+ */
 function wpsc_purchlogitem_trackhistory() {
-   global $purchlogitem;
-   $output = '<ul>';
-   foreach ( (array)$_SESSION['wpsc_nzpost_parsed'][0]['children'][0]['children'][1]['children'] as $history ) {
-	  $outputs[] = '<li>' . $history['children'][0]['tagData'] . " : " . $history['children'][1]['tagData'] . " </li>";
-   }
-   $outputs = array_reverse( $outputs );
-   foreach ( $outputs as $o ) {
-	  $output .= $o;
-   }
-   $output .='</ul>';
-   return $output;
+	global $purchlogitem;
+
+	if ( ( 'nzpost' == $purchlogitem->extrainfo->shipping_method ) && ! empty( $purchlogitem->extrainfo->track_id ) ) {
+
+		$output = '<ul>';
+		foreach ( ( array ) $_SESSION ['wpsc_nzpost_parsed'] [0] ['children'] [0] ['children'] [1] ['children'] as $history ) {
+			$outputs [] = '<li>' . $history ['children'] [0] ['tagData'] . ' : ' . $history ['children'] [1] ['tagData'] . ' </li>';
+		}
+
+		$outputs = array_reverse( $outputs );
+		foreach ( $outputs as $o ) {
+			$output .= $o;
+		}
+
+		$output .= '</ul>';
+		return $output;
+	} else {
+		// TODO: If there isn't one already, we should add a tracking callback to the shipping API
+		return '';
+	}
+}
+
+
+/**
+ * Weight of current or specified purchase
+ *
+ * @since 3.8.14
+ *
+ *
+ * @param string $id
+ * @return float $weight in '$out_unit' of shipment
+ */
+function wpsc_purchlogs_get_weight( $id = '', $out_unit = 'pound' ) {
+	global $purchlogitem;
+	$weight = 0.0;
+	$items_count = 0;
+
+	if ( empty( $id ) || ( ! empty( $purchlogitem ) &&  ( $id == $purchlogitem->purchlogid ) ) ) {
+		$thepurchlogitem = $purchlogitem;
+	} else {
+		$thepurchlogitem = new wpsc_purchaselogs_items( $id );
+	}
+
+	/**
+	 * Filter wpsc_purchlogs_before_get_weight
+	 *
+	 * Allow the weight to be overridden, can be used to persistantly save weight and recall it rather than recalculate
+	 *
+	 * @since 3.8.14
+	 *
+	 * @param  float  $weight, purchase calculation will not continue if value is returned
+	 * @param  string weight unit to use for return value
+	 * @param  object wpsc_purchaselogs_items purchase log item being used
+	 * @param  int    purchase log item id
+	 * @return float  $weight
+	 */
+	$weight_override = apply_filters( 'wpsc_purchlogs_before_get_weight', false, $out_unit, $thepurchlogitem, $thepurchlogitem->purchlogid );
+	if ( $weight_override !== false ) {
+		return $weight_override;
+	}
+
+	// if there isn't a purchase log item we are done
+	if ( empty( $thepurchlogitem ) ) {
+		return false;
+	}
+
+	foreach ( ( array ) $thepurchlogitem->allcartcontent as $cartitem ) {
+		$product_meta = get_product_meta( $cartitem->prodid, 'product_metadata', true );
+		if ( ! empty( $product_meta ['weight'] ) ) {
+
+			$converted_weight = wpsc_convert_weight( $product_meta ['weight'], $product_meta['weight_unit'], $out_unit, true );
+
+			$weight += $converted_weight * $cartitem->quantity;
+			$items_count += $cartitem->quantity;
+		}
+	}
+
+	/**
+	 * Filter wpsc_purchlogs_get_weight
+	 *
+	 * Allow the weight to be overridden
+	 *
+	 * @since 3.8.14
+	 *
+	 * @param  float  $weight                 calculated cart weight
+	 * @param  object wpsc_purchaselogs_items purchase log item being used
+	 * @param  int    purchase log item id
+	 * @param  int    $items_count            how many items are in the cart, useful for
+	 *                                        cases where packaging weight changes as more items are
+	 *                                        added
+	 */
+	$weight = apply_filters( 'wpsc_purchlogs_get_weight', $weight, $thepurchlogitem, $thepurchlogitem->purchlogid, $items_count );
+
+	return $weight;
+}
+
+/**
+ * Weight of current or specified purchase formatted as text with units
+ *
+ * @since 3.8.14
+ *
+ * @param string $id
+ * @return string $weight in KG and lbs and ounces
+ */
+function wpsc_purchlogs_get_weight_text( $id = '' ) {
+	global $purchlogitem;
+
+	if ( empty( $id ) ) {
+		$id = $purchlogitem->purchlogid;
+	}
+
+	$weight_in_pounds = wpsc_purchlogs_get_weight( $id, 'pound' );
+
+	if ( $weight_in_pounds > 0 ) {
+
+		$pound = floor( $weight_in_pounds );
+		$ounce = round( ( $weight_in_pounds - $pound ) * 16 );
+
+		$weight_in_kg = wpsc_purchlogs_get_weight( $id, 'kg' );
+
+		$weight_string = number_format( $weight_in_kg , 2 ) .' ' .  __( 'KG' , 'wpsc' ) . ' / ' .  $pound . ' ' .  __( 'LB', 'wpsc' ) . ' ' . $ounce . ' ' . __( 'OZ', 'wpsc' );
+
+	} else {
+		$weight_string = '';
+	}
+
+	/**
+	 * Filter wpsc_purchlogs_get_weight_text
+	 *
+	 * Format weight as text suitable to inform user of purchase shipping weight
+	 *
+	 * @since 3.8.14
+	 *
+	 * @param  string weight of purchase as text string with both KG and pounds/ounces
+	 * @param  object wpsc_purchaselogs_items purchase log item being used
+	 */
+	return apply_filters( 'wpsc_purchlogs_get_weight_text', $weight_string, $id  );
+
 }
 
 function wpsc_purchlogs_has_customfields( $id = '' ) {
@@ -210,12 +350,12 @@ function wpsc_purchaselog_details_discount() {
 
 function wpsc_purchaselog_details_date() {
    global $purchlogitem;
-   return date_i18n( apply_filters( 'wpsc_single_purchase_log_date_format', get_option( 'date_format' ) ), $purchlogitem->extrainfo->date );
+   return date_i18n( apply_filters( 'wpsc_single_purchase_log_date_format', get_option( 'date_format' ) ), $purchlogitem->extrainfo->date + ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS ) );
 }
 
 function wpsc_purchaselog_details_date_time() {
    global $purchlogitem;
-   return date_i18n( apply_filters( 'wpsc_single_purchase_log_date_time_format', get_option( 'date_format' ) . ' g:ia' ), $purchlogitem->extrainfo->date );
+   return date_i18n( apply_filters( 'wpsc_single_purchase_log_date_time_format', get_option( 'date_format' ) . ' g:ia' ),   $purchlogitem->extrainfo->date + ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS ) );
 }
 
 function wpsc_purchaselog_details_total() {
@@ -322,12 +462,25 @@ function wpsc_display_purchlog_totalprice() {
 
 function wpsc_display_purchlog_buyers_name() {
    global $purchlogitem;
-   return esc_html( $purchlogitem->userinfo['billingfirstname']['value'] ) . ' ' . esc_html( $purchlogitem->userinfo['billinglastname']['value'] );
+
+   $first_name = $last_name = '';
+
+   if ( isset( $purchlogitem->userinfo['billingfirstname'] ) ) {
+   		$first_name = $purchlogitem->userinfo['billingfirstname']['value'];
+   }
+
+   if ( isset( $purchlogitem->userinfo['billinglastname'] ) ) {
+   		$last_name = ' ' . $purchlogitem->userinfo['billinglastname']['value'];
+   }
+
+   $name = trim( $first_name . $last_name );
+
+   return esc_html( $name );
 }
 
 function wpsc_display_purchlog_buyers_city() {
    global $purchlogitem;
-   return esc_html( $purchlogitem->userinfo['billingcity']['value'] );
+   return isset( $purchlogitem->userinfo['billingcity'] ) ? esc_html( $purchlogitem->userinfo['billingcity']['value'] ) : '';
 }
 
 function wpsc_display_purchlog_buyers_email() {
@@ -337,7 +490,7 @@ function wpsc_display_purchlog_buyers_email() {
 
 function wpsc_display_purchlog_buyers_address() {
    global $purchlogitem;
-   return nl2br( esc_html( $purchlogitem->userinfo['billingaddress']['value'] ) );
+   return isset( $purchlogitem->userinfo['billingaddress'] ) ? nl2br( esc_html( $purchlogitem->userinfo['billingaddress']['value'] ) ) : '';
 }
 
 function wpsc_display_purchlog_buyers_state_and_postcode() {
@@ -378,13 +531,24 @@ function wpsc_display_purchlog_shipping_name() {
 }
 
 function wpsc_display_purchlog_shipping_address() {
-   global $purchlogitem;
-   return nl2br( esc_html( $purchlogitem->shippinginfo['shippingaddress']['value'] ) );
+	global $purchlogitem;
+
+	if ( isset( $purchlogitem->shippinginfo['shippingaddress'] ) ) {
+		return nl2br( esc_html( $purchlogitem->shippinginfo['shippingaddress']['value'] ) );
+	} else {
+		return '';
+	}
+
 }
 
 function wpsc_display_purchlog_shipping_city() {
    global $purchlogitem;
-   return esc_html( $purchlogitem->shippinginfo['shippingcity']['value'] );
+
+	if ( isset( $purchlogitem->shippinginfo['shippingcity'] ) ) {
+		return esc_html( $purchlogitem->shippinginfo['shippingcity']['value'] );
+	} else {
+		return '';
+	}
 }
 
 function wpsc_display_purchlog_shipping_state_and_postcode() {
@@ -407,7 +571,12 @@ function wpsc_display_purchlog_shipping_state_and_postcode() {
 
 function wpsc_display_purchlog_shipping_country() {
    global $purchlogitem;
-   return esc_html( wpsc_get_country( $purchlogitem->shippinginfo['shippingcountry']['value'] ) );
+
+	if ( isset( $purchlogitem->shippinginfo['shippingcountry'] ) ) {
+		return esc_html( wpsc_get_country( $purchlogitem->shippinginfo['shippingcountry']['value'] ) );
+	} else {
+		return '';
+	}
 }
 
 function wpsc_display_purchlog_shipping_method() {
@@ -455,7 +624,7 @@ function wpsc_purchaselog_order_summary() {
 
 function wpsc_has_purchlog_shipping() {
    global $purchlogitem;
-   if ( $purchlogitem->shippinginfo['shippingfirstname']['value'] != '' ) {
+   if ( isset( $purchlogitem->shippinginfo['shippingfirstname'] ) && $purchlogitem->shippinginfo['shippingfirstname']['value'] != '' ) {
 	  return true;
    } else {
 	  return false;
@@ -472,18 +641,16 @@ function wpsc_purchlogs_have_downloads_locked() {
    }
 }
 
-/* Start Order Notes (by Ben) */
-
+/**
+ * Display Purchase Log Notes
+ *
+ * @return  string  Notes.
+ */
 function wpsc_display_purchlog_notes() {
-   global $purchlogitem;
-   if ( isset( $purchlogitem->extrainfo->notes ) ) {
-	  return $purchlogitem->extrainfo->notes;
-   } else {
-	  return false;
-   }
+	global $purchlogitem;
+	$purchase_log = new WPSC_Purchase_Log( $purchlogitem->purchlogid );
+	return $purchase_log->get( 'notes' );
 }
-
-/* End Order Notes (by Ben) */
 
 /**
  * WP eCommerce purchaselogs AND purchaselogs_items class
@@ -776,13 +943,30 @@ class wpsc_purchaselogs {
 	  return $sum;
    }
 
-   function search_purchlog_view( $searchterm ) {
-	  global $wpdb;
-	  $sql = $wpdb->prepare( "SELECT DISTINCT `" . WPSC_TABLE_PURCHASE_LOGS . "` . * FROM `" . WPSC_TABLE_SUBMITTED_FORM_DATA . "` LEFT JOIN `" . WPSC_TABLE_PURCHASE_LOGS . "` ON `" . WPSC_TABLE_SUBMITTED_FORM_DATA . "`.`log_id` = `" . WPSC_TABLE_PURCHASE_LOGS . "`.`id` WHERE `" . WPSC_TABLE_SUBMITTED_FORM_DATA . "`.`value` LIKE '%" . like_escape( $searchterm ) . "%' OR `" . WPSC_TABLE_PURCHASE_LOGS . "`.`transactid` = %s OR `" . WPSC_TABLE_PURCHASE_LOGS . "`.`track_id` LIKE '%" . like_escape( $searchterm )."%'", $searchterm );
-	  $newlogs = $wpdb->get_results( $sql );
-	  $_SESSION['newlogs'] = $newlogs;
-	  return $newlogs;
-   }
+	function search_purchlog_view( $searchterm ) {
+		global $wpdb, $wp_version;
+
+		if ( version_compare( $wp_version, '4.0', '>=' ) ) {
+			$searchterm = '%' . $wpdb->esc_like( $searchterm ) . '%';
+		} else {
+			$searchterm = '%' . like_escape( $searchterm ) . '%';
+		}
+
+		$newlogs = $wpdb->get_results( $wpdb->prepare(
+			"SELECT DISTINCT `" . WPSC_TABLE_PURCHASE_LOGS . "` . * FROM `" . WPSC_TABLE_SUBMITTED_FORM_DATA . "`
+			LEFT JOIN `" . WPSC_TABLE_PURCHASE_LOGS . "`
+			ON `" . WPSC_TABLE_SUBMITTED_FORM_DATA . "`.`log_id` = `" . WPSC_TABLE_PURCHASE_LOGS . "`.`id`
+			WHERE `" . WPSC_TABLE_SUBMITTED_FORM_DATA . "`.`value` LIKE %s
+			OR `" . WPSC_TABLE_PURCHASE_LOGS . "`.`transactid` = %s
+			OR `" . WPSC_TABLE_PURCHASE_LOGS . "`.`track_id` LIKE %s",
+			$searchterm
+			)
+		);
+
+		$_SESSION['newlogs'] = $newlogs;
+
+		return $newlogs;
+	}
 
 }
 
@@ -812,8 +996,7 @@ class wpsc_purchaselogs_items {
    function shippingstate( $id ) {
 	  global $wpdb;
 	  if ( is_numeric( $id ) ) {
-		 $sql = "SELECT `name` FROM `" . WPSC_TABLE_REGION_TAX . "` WHERE id=" . $id;
-		 $name = $wpdb->get_var( $sql );
+		 $name = wpsc_get_region( $id );
 		 return $name;
 	  } else {
 		 return $id;
@@ -838,19 +1021,22 @@ class wpsc_purchaselogs_items {
       // overwrite each other.
       // $additional_fields is introduced to fix this. However, the $additionaldetails array as well
       // as $this->customcheckoutfields needs to be kept for compatibility purposes.
-      $additional_fields = array();
-      foreach ( (array)$userinfo as $input_row ) {
+
+      $additional_fields = $billingdetails = $shippinginfo = array();
+
+      foreach ( (array) $userinfo as $input_row ) {
          if ( stristr( $input_row['unique_name'], 'shipping' ) ) {
             $shippinginfo[$input_row['unique_name']] = $input_row;
          } elseif ( stristr( $input_row['unique_name'], 'billing' ) ) {
-            $billingdetails[$input_row['unique_name']] = $input_row;
+            $billingdetails[ $input_row['unique_name'] ] = $input_row;
          } else {
-            $additionaldetails[$input_row['name']] = $input_row;
+            $additionaldetails[ $input_row['name'] ] = $input_row;
             $additional_fields[] = $input_row;
          }
       }
-      $this->userinfo = $billingdetails;
+      $this->userinfo     = $billingdetails;
       $this->shippinginfo = $shippinginfo;
+
       if ( isset( $additionaldetails ) ) {
          $this->customcheckoutfields = $additionaldetails;
       }

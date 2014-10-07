@@ -131,7 +131,7 @@ class ASHXML{
  *
  * @since 0.0.1
  */
-class ASHTools{
+class ASHTools {
     /**
      * Determines if the given zipcode is a US Military APO/AFO zip code
      *
@@ -161,11 +161,7 @@ class ASHTools{
                 "96671","96672","96673","96674","96675","96677","96678","96679","96681","96681",
                 "96682","96683","96684","96684","96686","96687","96698");
 
-        if (in_array($zipcode, $zips)){
-            return TRUE;
-        }else{
-            return FALSE;
-        }
+        return in_array( $zipcode, $zips );
     }
 
     /**
@@ -175,15 +171,9 @@ class ASHTools{
      * @param string $short_country
      * @return string
      */
-    function get_full_country($short_country){
-        global $wpdb;
-        if (!isset($wpdb)){
-            return $short_country;
-        }
-		$full_name = $wpdb->get_var( $wpdb->prepare( "SELECT country
-        							 FROM ".WPSC_TABLE_CURRENCY_LIST."
-    							 	 WHERE isocode = %s", $short_country ) );
-        return $full_name;
+    function get_full_country( $short_country ){
+		$country = new WPSC_Country( $short_country );
+		return $country->get_name();
     }
 
     /**
@@ -194,19 +184,8 @@ class ASHTools{
      * @return string|int will be int if wordpress database & wpec are not available
      */
     function get_state( $state_code ){
-        global $wpdb;
-
-        if ( ! defined ( "WPSC_TABLE_REGION_TAX") )
-            return $state_code;
-
         $state_code = isset( $_POST['region'] ) ? $_POST['region'] : $state_code;
-
-        $sql = $wpdb->prepare( "SELECT `".WPSC_TABLE_REGION_TAX."`.* FROM `".WPSC_TABLE_REGION_TAX."`
-        WHERE `".WPSC_TABLE_REGION_TAX."`.`id` = %d", $state_code );
-
-		$dest_region_data = $wpdb->get_results( $sql, ARRAY_A );
-
-		return is_array( $dest_region_data ) && isset( $dest_region_data[0] ) ? $dest_region_data[0]['code'] : "";
+        return wpsc_get_region( $state_code );
     }
 
     /**
@@ -241,6 +220,85 @@ class ASHTools{
                         );
         return $address;
     }
+
+    /**
+     * Checks if the destination country requires a postal code
+     *
+     * @since 3.8.14
+     * @param string $iso_code
+     * @return bool
+     */
+    function needs_post_code( $iso_code ) {
+
+        $no_post_code = array();
+
+    	$no_post_code['AO'] = "Angola";
+    	$no_post_code['AG'] = "Antigua and Barbuda";
+    	$no_post_code['AW'] = "Aruba";
+    	$no_post_code['BS'] = "Bahamas";
+    	$no_post_code['BZ'] = "Belize";
+    	$no_post_code['BJ'] = "Benin";
+    	$no_post_code['BQ'] = "Bonaire, Sint Eustatius and Saba";
+    	$no_post_code['BW'] = "Botswana";
+    	$no_post_code['BF'] = "Burkina Faso";
+    	$no_post_code['BI'] = "Burundi";
+    	$no_post_code['CM'] = "Cameroon";
+    	$no_post_code['CF'] = "Central African Republic";
+    	$no_post_code['KM'] = "Comoros";
+    	$no_post_code['CG'] = "Congo (Brazzaville)";
+    	$no_post_code['CD'] = "Congo, Democratic Republic";
+    	$no_post_code['CK'] = "Cook Islands";
+    	$no_post_code['CI'] = "Côte d'Ivoire (Ivory Coast)";
+    	$no_post_code['CW'] = "Curaçao";
+    	$no_post_code['DJ'] = "Djibouti";
+    	$no_post_code['DM'] = "Dominica";
+    	$no_post_code['TL'] = "East Timor";
+    	$no_post_code['GQ'] = "Equatorial Guinea";
+    	$no_post_code['ER'] = "Eritrea";
+    	$no_post_code['FJ'] = "Fiji";
+    	$no_post_code['TF'] = "French Southern and Antarctic Territories";
+    	$no_post_code['GM'] = "Gambia";
+    	$no_post_code['GH'] = "Ghana";
+    	$no_post_code['GD'] = "Grenada";
+    	$no_post_code['GN'] = "Guinea";
+    	$no_post_code['GY'] = "Guyana";
+    	$no_post_code['HK'] = "Hong Kong";
+    	$no_post_code['IE'] = "Ireland";
+    	$no_post_code['JM'] = "Jamaica";
+    	$no_post_code['KI'] = "Kiribati";
+    	$no_post_code['KP'] = "Korea, North";
+    	$no_post_code['MO'] = "Macau";
+    	$no_post_code['MW'] = "Malawi";
+    	$no_post_code['ML'] = "Mali";
+    	$no_post_code['MR'] = "Mauritania";
+    	$no_post_code['MU'] = "Mauritius";
+    	$no_post_code['MS'] = "Montserrat";
+    	$no_post_code['NR'] = "Nauru";
+    	$no_post_code['NU'] = "Niue";
+    	$no_post_code['QA'] = "Qatar";
+    	$no_post_code['KN'] = "Saint Kitts and Nevis";
+    	$no_post_code['LC'] = "Saint Lucia";
+    	$no_post_code['ST'] = "Sao Tome and Principe";
+    	$no_post_code['SC'] = "Seychelles";
+    	$no_post_code['SX'] = "Sint Maarten";
+    	$no_post_code['SL'] = "Sierra Leone";
+    	$no_post_code['SB'] = "Solomon Islands";
+    	$no_post_code['SO'] = "Somalia";
+    	$no_post_code['SR'] = "Suriname";
+    	$no_post_code['SY'] = "Syria";
+    	$no_post_code['TZ'] = "Tanzania";
+    	$no_post_code['TG'] = "Togo";
+    	$no_post_code['TK'] = "Tokelau";
+    	$no_post_code['TO'] = "Tonga";
+    	$no_post_code['TV'] = "Tuvalu";
+    	$no_post_code['UG'] = "Uganda";
+    	$no_post_code['AE'] = "United Arab Emirates";
+    	$no_post_code['VU'] = "Vanuatu";
+    	$no_post_code['YE'] = "Yemen";
+    	$no_post_code['ZW'] = "Zimbabwe";
+
+    	return apply_filters( 'wpsc_ash_tools_needs_post_code', ( ! isset( $no_post_code[ $iso_code ] ) ), $no_post_code, $iso_code );
+    }
 }
 
 /**
@@ -249,7 +307,7 @@ class ASHTools{
  *
  * @since 0.0.1
  */
-class ASHPackage{
+class ASHPackage {
 	/**
 	 * Product ids included in package
 	 * @var array
@@ -526,20 +584,23 @@ class ASH{
             $package = new ASHPackage();
             //*** Set package dimensions ***\\
             $dimensions = get_product_meta($cart_item->product_id, 'product_metadata'); //The 'dimensions' meta doesn't exist.
-            $dimensions = $dimensions[0]['dimensions'];
+            if ( isset( $dimensions[0]['dimensions'] ) ) {
+				$dimensions = $dimensions[0]['dimensions'];
+            }
             $dim_array = array();
             $dim_array["weight"] = $cart_item->weight;
             $dim_array["height"] = ( !empty( $dimensions["height"] ) && is_numeric( $dimensions["height"] ) ) ? $dimensions["height"] : 1;
             $dim_array["width"]  = ( !empty( $dimensions["width"]  ) && is_numeric( $dimensions["width"]  ) ) ? $dimensions["width"]  : 1;
             $dim_array["length"] = ( !empty( $dimensions["length"] ) && is_numeric( $dimensions["length"] ) ) ? $dimensions["length"] : 1;
             $package->set_dimensions($dim_array);
-            //*** Set other meta ***\\
-            $package->hazard = (get_post_meta($cart_item->product_id,"g:ship_hazard",TRUE) === TRUE) ? TRUE : FALSE;	//Doesn't exist. Allow the user to enter Google formatted meta.
-            $package->insurance = (get_post_meta($cart_item->product_id,"g:ship_insurance",TRUE)=== TRUE)? TRUE:FALSE;	//Doesn't exist. Allow the user to enter Google formatted meta.
-            $package->insured_amount = get_post_meta($cart_item->product_id,"g:ship_insured_amount",TRUE);				//Doesn't exist. Allow the user to enter Google formatted meta.
+
+            /* Set other meta */
+            $package->hazard = ( get_product_meta( $cart_item->product_id, "ship_hazard", TRUE ) === TRUE) ? TRUE : FALSE;			//Fixed ternary evaluation.
+            $package->insurance = ( get_product_meta( $cart_item->product_id, "ship_insurance", TRUE ) === TRUE) ? TRUE : FALSE;	//Fixed ternary evaluation.
+            $package->insured_amount = get_product_meta( $cart_item->product_id,"ship_insured_amount", TRUE );						//Fixed ternary evaluation.
             $package->value = $cart_item->unit_price;
             $package->contents = $cart_item->product_name;
-			$package->this_side_up = (get_post_meta($cart_item->product_id,"g:this_side_up",TRUE)=== TRUE)?TRUE:FALSE;	//Product can't be shipped sideways.
+			$package->this_side_up = ( get_post_meta( $cart_item->product_id, "h:this_side_up", TRUE ) === TRUE ) ? TRUE : FALSE;	//Prod. page hide, prod. UI display
             if ($shipment->hazard === FALSE and $package->hazard === TRUE){
                 $shipment->set_hazard(TRUE);
             }
@@ -587,11 +648,15 @@ class ASH{
     function check_cache($internal_name, $shipment){
         $wpec_ash = wpsc_get_customer_meta( 'shipping_ash' );
 
-        if ( ! $wpec_ash )
+        if ( ! $wpec_ash || ! is_array( $wpec_ash ) ) { //Avoids: Warning: 'array_key_exists' expects array.
             return false;
+        }
 
-        if ( ! array_key_exists( $internal_name, $wpec_ash ) )
+        if ( ! array_key_exists( $internal_name, $wpec_ash ) ) {
             return false;
+        }
+
+        $cached_shipment = array();
 
         if ( is_object( $wpec_ash[$internal_name]["shipment"] ) ){
             $cached_shipment = $wpec_ash[$internal_name]["shipment"];

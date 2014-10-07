@@ -7,11 +7,11 @@ class Sputnik_API {
 	protected static $auth = null;
 
 	/**
-	 * For sites like GetShopped that will distribute Sputnik with a plugin to sell WP plugins,
+	 * For sites like WPeCommerce.org that will distribute Sputnik with a plugin to sell WP plugins,
 	 * we override the domain. This is because we need to ensure Baikonur receives the Saas domain,
 	 * not the end-user domain. Only relevant where Sputnik is available to an end-user, not a Saas.
 	 */
-	protected static $domain_override = 'http://getshopped.org';
+	protected static $domain_override = 'http://wpecommerce.org';
 
 	public static function get_all($page = 1, $params = null) {
 		$url = '/';
@@ -118,7 +118,7 @@ class Sputnik_API {
 	<head>
 		<title><?php _e( 'Redirecting ...', 'wpsc' ); ?></title>
 		<script type="text/javascript">
-			parent.location = '<?php echo $return_url; ?>';
+			parent.location = '<?php echo esc_js( $return_url ); ?>';
 			window.close();
 		</script>
 	</head>
@@ -212,6 +212,7 @@ class Sputnik_API {
 		if ($request['response']['code'] != 200) {
 			throw new Exception($request['body'], $request['response']['code']);
 		}
+
 		$result = json_decode($request['body']);
 
 		if ($result === null) {

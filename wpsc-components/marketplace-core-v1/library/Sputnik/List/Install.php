@@ -263,7 +263,6 @@ class Sputnik_List_Install extends WP_List_Table {
 				$plugin->price = _x('Free', 'plugin price', 'wpsc' );
 			}
 
-			$plugin->author = $plugin->author;
 			if (!empty($plugin->author))
 				$plugin->author = ' <cite>' . sprintf( __( 'By %s', 'wpsc' ), $plugin->author ) . '.</cite>';
 
@@ -361,7 +360,7 @@ class Sputnik_List_Install extends WP_List_Table {
 
 	protected static function display_as_grid($plugin, $style) {
 
-		$name = strip_tags( $plugin->name . ' ' . $plugin->version );
+		$name = strip_tags( $plugin->name . ' v.' . $plugin->version );
 		$action_links = array();
 		$action_links[] = '<a href="' . Sputnik_Admin::build_url(array('info' => $plugin->slug, 'TB_iframe' => true))
 							. '" class="thickbox button info" title="' .

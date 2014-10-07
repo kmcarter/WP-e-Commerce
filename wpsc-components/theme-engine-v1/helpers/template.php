@@ -112,34 +112,53 @@ function wpsc_select_theme_functions() {
  * @description:  Adds additional wpsc classes to the body tag.
  * @param:        $classes = Array of body classes
  * @return:       (Array) of classes
+ *
+ * @uses get_permalink()                Returns WP permalink given post_id
+ * @uses get_option()                   Returns option value given key
+ * @uses get_post_type()                Returns string for registered post_type name
+ * @uses wpsc_is_single_product()       Returns true if we are on a single product
+ * @uses wpsc_is_in_category()          Returns true if we are on a WPSC product cat
+ * @uses wpsc_is_in_tag()               Returns true if we are on a WPSC product tag
+ * @usse esc_attr()                     Keeping things safe just in case
  */
 function wpsc_body_class( $classes ) {
 	global $wp_query, $wpsc_query;
+
 	$post_id = 0;
-	if ( isset( $wp_query->post->ID ) )
+	if ( isset( $wp_query->post ) && is_object( $wp_query->post ) && isset( $wp_query->post->ID ) ) {
 		$post_id = $wp_query->post->ID;
+	}
+
 	$page_url = get_permalink( $post_id );
 
+
 	// If on a product or category page...
-	if ( get_option( 'product_list_url' ) == $page_url ) {
+	if ( get_option( 'product_list_url' ) == $page_url || get_post_type( $post_id ) === 'wpsc-product' ) {
 
 		$classes[] = 'wpsc';
 
 		if ( !is_array( $wpsc_query->query ) )
 			$classes[] = 'wpsc-home';
 
-		if ( wpsc_is_single_product ( ) ) {
+		if ( wpsc_is_single_product() ) {
+			$object = $wp_query->get_queried_object();
 			$classes[] = 'wpsc-single-product';
-			if ( absint( $wpsc_query->products[0]['id'] ) > 0 ) {
-				$classes[] = 'wpsc-single-product-' . $wpsc_query->products[0]['id'];
+			if ( absint( $object->ID ) > 0 ) {
+				$classes[] = 'wpsc-single-product-' . absint( $object->ID );
 			}
 		}
 
-		if ( wpsc_is_in_category() && !wpsc_is_single_product() )
+		if ( wpsc_is_in_category() && ! wpsc_is_single_product() ){
 			$classes[] = 'wpsc-category';
+			$tax_object = $wp_query->get_queried_object();
+			$classes[] = 'wpsc-category-' . esc_attr( $tax_object->slug );
+		}
 
-		if ( isset( $wpsc_query->query_vars['category_id'] ) && absint( $wpsc_query->query_vars['category_id'] ) > 0 )
-			$classes[] = 'wpsc-category-' . $wpsc_query->query_vars['category_id'];
+		if ( wpsc_is_in_tag() && ! wpsc_is_single_product() ){
+			$classes[] = 'wpsc-tag';
+			$tax_object = $wp_query->get_queried_object();
+			$classes[] = 'wpsc-tag-' . esc_attr( $tax_object->slug );
+		}
 
 	}
 
@@ -181,8 +200,14 @@ function wpsc_get_template_file_path( $file = '' ){
 
 	// No cache, so find one and set it
 	if ( false === ( $file_path = get_transient( WPEC_TRANSIENT_THEME_PATH_PREFIX . $file ) ) ) {
-		// Look for file in stylesheet
-		if ( file_exists( get_stylesheet_directory() . '/' . $file ) ) {
+
+		// Plugin may override the template file, get the file name and check to be sure file exists
+		$file_path = apply_filters( 'wpsc_get_template_file_path' , false );
+		if ( ! empty( $file_path ) && file_exists( $file_path ) ) {
+			$file_path = realpath( $file_path ); // real path just in case plugin doesn't return canonicalized path name
+
+		// Look for file in stylesheet directory
+		} elseif ( file_exists( get_stylesheet_directory() . '/' . $file ) ) {
 			$file_path = get_stylesheet_directory() . '/' . $file;
 
 		// Look for file in template

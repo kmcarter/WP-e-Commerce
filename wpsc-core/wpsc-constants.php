@@ -35,7 +35,7 @@ function _wpsc_is_session_started() {
 function wpsc_core_load_session() {
 
 	if ( ! _wpsc_is_session_started() ) {
-		session_start();
+		@ session_start();
 	}
 
 	return _wpsc_is_session_started();
@@ -47,37 +47,94 @@ function wpsc_core_load_session() {
  * The core WPEC constants necessary to start loading
  */
 function wpsc_core_constants() {
-	if ( ! defined( 'WPSC_URL' ) )
+	if ( ! defined( 'WPSC_URL' ) ) {
 		define( 'WPSC_URL', plugins_url( '', __FILE__ ) );
+	}
 
 	// Define Plugin version
-	define( 'WPSC_VERSION'            , '3.8.14-dev' );
-	define( 'WPSC_MINOR_VERSION'      , 'e8a508c011' );
-	define( 'WPSC_PRESENTABLE_VERSION', '3.8.14-dev' );
-	define( 'WPSC_DB_VERSION'         , 9 );
+	if ( ! defined( 'WPSC_VERSION' ) ) {
+		define( 'WPSC_VERSION'            , '3.9-dev' );
+	}
 
-	// Define Debug Variables for developers
-	define( 'WPSC_DEBUG'        , false );
-	define( 'WPSC_GATEWAY_DEBUG', false );
+	if ( ! defined( 'WPSC_MINOR_VERSION' ) ) {
+		define( 'WPSC_MINOR_VERSION'      , '6720b163bc' );
+	}
+
+	if ( ! defined( 'WPSC_PRESENTABLE_VERSION' ) ) {
+		define( 'WPSC_PRESENTABLE_VERSION', '3.9-dev' );
+	}
+
+	// Define a salt to use when we hash, WPSC_SALT may be defined for us in our config file, so check first
+	if ( ! defined( 'WPSC_SALT' ) ) {
+		if ( defined( 'AUTH_SALT' ) ) {
+			define( 'WPSC_SALT', AUTH_SALT );
+		} else {
+			define( 'WPSC_SALT', hash_hmac( 'md5', __FUNCTION__, __FILE__ ) );
+		}
+	}
+
+	// Define the current database version
+	define( 'WPSC_DB_VERSION', 13 );
+
+	// Define Debug Variables for developers, if they haven't already been defined
+	if ( ! defined( 'WPSC_DEBUG' ) ) {
+		define( 'WPSC_DEBUG', false );
+	}
+
+	if ( ! defined( 'WPSC_GATEWAY_DEBUG' ) ) {
+		define( 'WPSC_GATEWAY_DEBUG', false );
+	}
 
 	// Images URL
 	define( 'WPSC_CORE_IMAGES_URL',  WPSC_URL . '/wpsc-core/images' );
 	define( 'WPSC_CORE_IMAGES_PATH', WPSC_FILE_PATH . '/wpsc-core/images' );
 
 	// JS URL
-	define( 'WPSC_CORE_JS_URL',  WPSC_URL . '/wpsc-core/js' );
+	define( 'WPSC_CORE_JS_URL' , WPSC_URL . '/wpsc-core/js' );
 	define( 'WPSC_CORE_JS_PATH', WPSC_FILE_PATH . '/wpsc-core/js' );
 
 	// Require loading of deprecated functions for now. We will ween WPEC off
 	// of this in future versions.
-	define( 'WPEC_LOAD_DEPRECATED', true );
+	if ( ! defined( 'WPEC_LOAD_DEPRECATED' ) ) {
+		define( 'WPEC_LOAD_DEPRECATED', true );
+	}
+
+	// Do not require loading of deprecated JS of this in future versions.
+	if ( ! defined( 'WPEC_LOAD_DEPRECATED_JS' ) ) {
+		define( 'WPEC_LOAD_DEPRECATED_JS', false );
+	}
 
 	define( 'WPSC_CUSTOMER_COOKIE', 'wpsc_customer_cookie_' . COOKIEHASH );
+
 	if ( ! defined( 'WPSC_CUSTOMER_COOKIE_PATH' ) )
 		define( 'WPSC_CUSTOMER_COOKIE_PATH', COOKIEPATH );
 
-	if ( ! defined( 'WPSC_CUSTOMER_DATA_EXPIRATION' ) )
-    	define( 'WPSC_CUSTOMER_DATA_EXPIRATION', 48 * 3600 );
+	if ( ! defined( 'WPSC_CUSTOMER_DATA_EXPIRATION' ) ) {
+		define( 'WPSC_CUSTOMER_DATA_EXPIRATION', 48 * 3600 );
+	}
+
+	/*
+	 * When caching is true, the cart needs to be loaded using AJAX.
+	 * Caching is false then the cart can be generated in-line with the page.content.
+	 *
+	 * In the case of the cart widget, true would always load the widget using AJAX
+	 * That would mean that one user would not see another users cart because the
+	 * other user's request filled the page cache.
+	 */
+	if ( ! defined( 'WPSC_PAGE_CACHE_IN_USE' ) ) {
+		// if the do not cache constant is set behave as if there was a page cache in place and
+		// don't cache generated results
+		if ( defined( 'DONOTCACHEPAGE' ) && DONOTCACHEPAGE ) {
+			define( 'WPSC_PAGE_CACHE_IN_USE', true );
+		} elseif ( defined( 'WP_CACHE' ) ) {
+			define( 'WPSC_PAGE_CACHE_IN_USE', WP_CACHE );
+		} else {
+			// default to assuming a cache is there if we don't know otherwise,
+			// this should prevent one user's data from being used to generate pages
+			// that other user may see, for example cat contents.
+			define( 'WPSC_PAGE_CACHE_IN_USE', true );
+		}
+	}
 }
 
 /**
@@ -119,7 +176,7 @@ function wpsc_core_is_multisite() {
 
 	define( 'IS_WPMU', $is_multisite );
 
-	return (bool)$is_multisite;
+	return (bool) $is_multisite;
 }
 
 /**
@@ -186,6 +243,10 @@ function wpsc_core_constants_table_names() {
 
 	define( 'WPSC_TABLE_CART_ITEM_META',         "{$wp_table_prefix}wpsc_cart_item_meta" );
 	define( 'WPSC_TABLE_PURCHASE_META',          "{$wp_table_prefix}wpsc_purchase_meta" );
+
+	define( 'WPSC_TABLE_VISITORS',         		 "{$wp_table_prefix}wpsc_visitors" );
+	define( 'WPSC_TABLE_VISITOR_META',           "{$wp_table_prefix}wpsc_visitor_meta" );
+
 }
 
 /**
@@ -298,7 +359,8 @@ function _wpsc_action_init_shipping_method() {
 	}
 }
 
-add_action( 'wpsc_init', '_wpsc_action_init_shipping_method' );
+// make sure that when we display the shopping cart page shipping quotes have been calculated
+add_action( 'wpsc_before_shipping_of_shopping_cart', '_wpsc_action_init_shipping_method' );
 
 /***
  * wpsc_core_setup_globals()

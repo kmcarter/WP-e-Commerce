@@ -1,6 +1,6 @@
 <?php
 /**
- * WP e-Commerce Australia Post shipping module - http://auspost.com.au
+ * WP eCommerce Australia Post shipping module - http://auspost.com.au
  *
  */
 class australiapost {
@@ -35,7 +35,7 @@ class australiapost {
 		$this->debug = false; // change to true to log (to the PHP error log) the API URLs and responses for each active service
 
 		// Initialise the list of available postage services
-		
+
 		// DOMESTIC (Australia only)
 		$this->services['STANDARD'] = __('Standard Parcel Post', 'wpsc');
 		$this->services['EXPRESS']  = __('Express Post', 'wpsc');
@@ -348,7 +348,7 @@ class australiapost {
 			}
 		}
 		if ( $this->debug && strlen($log) )
-		    error_log( 'WP e-Commerce Australia Post shipping quotes for ' . home_url() . ":\n----------\n$log----------" );
+		    error_log( 'WP eCommerce Australia Post shipping quotes for ' . home_url() . ":\n----------\n$log----------" );
 
 		// Allow another WordPress plugin to override the quoted method(s)/amount(s)
 

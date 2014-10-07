@@ -22,8 +22,6 @@ $nzshpcrt_gateways[$num] = array(
 		 /// for modules that may not be present, like curl
 		'extra_modules' => array()
 	),
-
-	// this may be legacy, not yet decided
 	'internalname' => 'wpsc_merchant_paypal_express',
 
 	// All array members below here are legacy, and use the code in paypal_multiple.php
@@ -124,7 +122,7 @@ class wpsc_merchant_paypal_express extends wpsc_merchant {
 			'timeout' => 20,
 			'body' => $received_values,
 			'httpversion' => '1.1',
-			'user-agent' => ('WP e-Commerce/'.WPSC_PRESENTABLE_VERSION)
+			'user-agent' => ('WP eCommerce/'.WPSC_PRESENTABLE_VERSION)
 		);
 
 		$response = wp_remote_post( $paypal_url, $options );
@@ -263,10 +261,10 @@ class wpsc_merchant_paypal_express extends wpsc_merchant {
 
 		//if we have a discount then include a negative amount with that discount
 		// in php 0.00 = true so we will change that here
-		if($this->cart_data['cart_discount_value'] == 0.00)
+		if ($this->cart_data['cart_discount_value'] == 0.00)
 			$this->cart_data['cart_discount_value'] = 0;
 
-		$discount_value = $this->convert( $this->cart_data['cart_discount_value']);
+		$discount_value = $this->convert( $this->cart_data['cart_discount_value'] );
 
 		if ( $this->cart_data['cart_discount_value'] && ! $is_free_shipping ){
 			// if item total < discount amount, leave at least 0.01 unit in item total, then subtract
@@ -349,7 +347,7 @@ class wpsc_merchant_paypal_express extends wpsc_merchant {
 	function get_local_currency_code() {
 		if ( empty( $this->local_currency_code ) ) {
 			global $wpdb;
-			$this->local_currency_code = $wpdb->get_var( $wpdb->prepare( "SELECT `code` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `id`= %d LIMIT 1", get_option( 'currency_type' ) ) );
+			$this->local_currency_code = WPSC_Countries::get_currency_code( get_option( 'currency_type' ) );
 		}
 
 		return $this->local_currency_code;
@@ -381,7 +379,7 @@ function wpsc_paypal_express_convert( $amt ) {
 	if ( empty( $rate ) ) {
 		$rate = 1;
 		if ( empty( $local_currency_code ) ) {
-			$local_currency_code = $wpdb->get_var( "SELECT `code` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `id`='" . get_option( 'currency_type' ) . "' LIMIT 1" );
+			$local_currency_code = WPSC_Countries::get_currency_code( get_option( 'currency_type' ) );
 		}
 		if ( empty( $paypal_currency_code ) ) {
 			global $wpsc_gateways;
@@ -516,7 +514,8 @@ function form_paypal_express() {
   	</tr>\n";
 
 	$paypal_ipn = get_option( 'paypal_ipn' );
-	$store_currency_code = $wpdb->get_var( "SELECT `code` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `id` IN ('" . absint( get_option( 'currency_type' ) ) . "')" );
+	$store_currency_code = WPSC_Countries::get_currency_code( absint( get_option( 'currency_type' ) ) );
+
 	$current_currency = get_option( 'paypal_curcode' );
 
 	if ( ( $current_currency == '' ) && in_array( $store_currency_code, $wpsc_gateways['wpsc_merchant_paypal_express']['supported_currencies']['currency_list'] ) ) {
@@ -542,15 +541,27 @@ function form_paypal_express() {
 			$wpsc_gateways['wpsc_merchant_paypal_express']['supported_currencies']['currency_list'] = array();
 		}
 
-		$paypal_currency_list = array_map( 'esc_sql', $wpsc_gateways['wpsc_merchant_paypal_express']['supported_currencies']['currency_list'] );
 
-		$currency_list = $wpdb->get_results( "SELECT DISTINCT `code`, `currency` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `code` IN ('" . implode( "','", $paypal_currency_list ) . "')", ARRAY_A );
-		foreach ( $currency_list as $currency_item ) {
-			$selected_currency = '';
-			if( $current_currency == $currency_item['code'] ) {
-				$selected_currency = "selected='selected'";
+		// TODO verify that this query is correct, the WPSC_Countries call that repalced it was coded to duplicate the results, but
+		// why are currecies of inactive countries being returned??
+		//$old_currency_list = $wpdb->get_results( "SELECT DISTINCT `code`, `currency` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `code` IN ('" . implode( "','", $paypal_currency_list ) . "')", ARRAY_A );
+		$paypal_currency_list = array_map( 'esc_sql', $wpsc_gateways['wpsc_merchant_paypal_express']['supported_currencies']['currency_list'] );
+		$currency_list = WPSC_Countries::get_currencies( true );
+		$currency_codes_in_commmon = array_intersect( array_keys( $currency_list ), $paypal_currency_list );
+
+		foreach ( $currency_codes_in_commmon as $currency_code ) {
+
+			$currency_item = $currency_list[$currency_code];
+
+			if ( in_array( $currency_code, $paypal_currency_list ) ) {
+				$selected_currency = '';
+
+				if ( $current_currency == $currency_item['code'] ) {
+					$selected_currency = "selected='selected'";
+				}
+
+				$output .= "<option ".$selected_currency." value='{$currency_item['code']}'>{$currency_item['currency']}</option>";
 			}
-			$output .= "<option ".$selected_currency." value='{$currency_item['code']}'>{$currency_item['currency']}</option>";
 		}
 
 		$output .= "
@@ -573,7 +584,7 @@ function form_paypal_express() {
 
 function wpsc_get_paypal_currency_code() {
 	global $wpdb, $wpsc_gateways;
-	$paypal_currency_code = $wpdb->get_var( $wpdb->prepare( "SELECT `code` FROM `".WPSC_TABLE_CURRENCY_LIST."` WHERE `id`= %d LIMIT 1", get_option( 'currency_type' ) ) );
+	$paypal_currency_code = WPSC_Countries::get_currency_code( get_option( 'currency_type' ) );
 	if ( ! in_array( $paypal_currency_code, $wpsc_gateways['wpsc_merchant_paypal_express']['supported_currencies']['currency_list'] ) )
 		$paypal_currency_code = get_option( 'paypal_curcode', 'USD' );
 
@@ -700,8 +711,9 @@ function paypal_processingfunctions(){
 			$shipping_total += wpsc_paypal_express_convert( $cart_item['pnp'] );
 			$i ++;
 		}
+
 		//if we have a discount then include a negative amount with that discount
-		if ( $purchase_log['discount_value'] ){
+		if ( $purchase_log['discount_value'] && 0.00 != $purchase_log['discount_value'] ) {
 			$discount_value = wpsc_paypal_express_convert( $purchase_log['discount_value'] );
 
 			// if item total < discount amount, leave at least 0.01 unit in item total, then subtract
@@ -843,7 +855,8 @@ function paypal_processingfunctions(){
 			wpsc_update_customer_meta( 'paypal_express_reshash', $resArray );
 
 		   $ack = strtoupper( $resArray["ACK"] );
-		   if( $ack == "SUCCESS" ){
+
+		   if ( $ack == "SUCCESS" ) {
 
 				/********************************************************
 				GetExpressCheckoutDetails.php
@@ -866,25 +879,25 @@ function paypal_processingfunctions(){
 				authorization for the PayPal payment
 				*/
 
-				wpsc_update_customer_meta( 'paypal_express_token', $_REQUEST['token'] );
-				wpsc_update_customer_meta( 'paypal_express_payer_id', $_REQUEST['PayerID'] );
-
-				$resArray = wpsc_get_customer_meta( 'paypal_express_reshash' );
-
-				if ( get_option( 'permalink_structure' ) != '')
-					$separator ="?";
-				else
-					$separator ="&";
-
-
-				/* Display the  API response back to the browser .
+				/* Display the API response back to the browser .
 				If the response from PayPal was a success, display the response parameters
 				*/
-				if( isset( $_REQUEST['TOKEN'] ) && ! isset( $_REQUEST['PAYERID'] ) ) {
+				if ( isset( $_REQUEST['token'] ) && ! isset( $_REQUEST['PayerID'] ) ) {
 
 					wpsc_update_customer_meta( 'paypal_express_message', _x( '<h4>TRANSACTION CANCELED</h4>', 'paypal express cancel header', 'wpsc' ) );
 
-				}else{
+				} else {
+
+					wpsc_update_customer_meta( 'paypal_express_token'   , $_REQUEST['token'] );
+					wpsc_update_customer_meta( 'paypal_express_payer_id', $_REQUEST['PayerID'] );
+
+					$resArray = wpsc_get_customer_meta( 'paypal_express_reshash' );
+
+					if ( get_option( 'permalink_structure' ) != '')
+						$separator = "?";
+					else
+						$separator = "&";
+
 					if ( ! isset( $resArray['SHIPTOSTREET2'] ) )
 						$resArray['SHIPTOSTREET2'] = '';
 					$output ="
@@ -1033,5 +1046,5 @@ function paypal_deformatNVP( $nvpstr ) {
 	return $nvpArray;
 }
 
-if ( in_array( 'wpsc_merchant_paypal_express', get_option( 'custom_gateway_options' ) ) )
+if ( in_array( 'wpsc_merchant_paypal_express', get_option( 'custom_gateway_options', array() ) ) )
 	add_action('init', 'paypal_processingfunctions');

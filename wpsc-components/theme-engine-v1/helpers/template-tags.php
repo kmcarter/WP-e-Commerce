@@ -378,9 +378,6 @@ function wpsc_pagination( $totalpages = '', $per_page = '', $current_page = '', 
 			$page_link = trailingslashit( get_option( 'product_list_url' ) );
 			$separator = '';
 		}
-
-		if ( version_compare( get_bloginfo( 'version' ), '3.4', '<' ) )
-			$separator = 'page/';
 	}
 
 	// If there's only one page, return now and don't bother
@@ -425,8 +422,8 @@ function wpsc_pagination( $totalpages = '', $per_page = '', $current_page = '', 
 		if($current_page < $totalpages){
 			while(($i) > $current_page){
 
-				if($count < $num_paged_links && ($count+$current_page) <= $totalpages){
-						$output .= " <a href=\"". esc_url( $page_link .$separator. ($count+$current_page) . '/' .$additional_links ) . "\" title=\"" . sprintf( __('Page %s', 'wpsc'), ($count+$current_page) ) . "\">".($count+$current_page)."</a>";
+				if ( $count < ( $num_paged_links + 1 ) && ( $count + $current_page ) <= $totalpages ) {
+						$output .= " <a href=\"". esc_url( $page_link . $separator . ( $count + $current_page ) . '/' . $additional_links ) . "\" title=\"" . sprintf( __('Page %s', 'wpsc'), ($count+$current_page) ) . "\">".($count+$current_page)."</a>";
 				$i++;
 				}else{
 				break;
@@ -527,12 +524,14 @@ function wpsc_show_stock_availability(){
  * @return string - the product image URL, or the URL of the resized version
  */
 function wpsc_product_image( $attachment_id = 0, $width = null, $height = null ) {
+
 	// Do some dancing around the image size
-	if ( ( ( $width >= 10 ) && ( $height >= 10 ) ) && ( ( $width <= 1024 ) && ( $height <= 1024 ) ) )
+	if ( ( ( $width >= 10 ) && ( $height >= 10 ) ) && ( ( $width <= 1024 ) && ( $height <= 1024 ) ) ) {
 		$intermediate_size = "wpsc-{$width}x{$height}";
+	}
 
 	// Get image url if we have enough info
-	if ( ( $attachment_id > 0 ) && ( !empty( $intermediate_size ) ) ) {
+	if ( $attachment_id > 0 && ! empty( $intermediate_size ) ) {
 
 		// Get all the required information about the attachment
 		$uploads    = wp_upload_dir();
@@ -540,45 +539,58 @@ function wpsc_product_image( $attachment_id = 0, $width = null, $height = null )
 		$file_path  = get_attached_file( $attachment_id );
 
 		// Clean up the meta array
-		foreach ( $image_meta as $meta_name => $meta_value )
-			$image_meta[$meta_name] = maybe_unserialize( array_pop( $meta_value ) );
+		foreach ( $image_meta as $meta_name => $meta_value ) {
+			$image_meta[ $meta_name ] = maybe_unserialize( array_pop( $meta_value ) );
+		}
 
+		$attachment_metadata = isset( $image_meta['_wp_attachment_metadata'] ) ? $image_meta['_wp_attachment_metadata'] : null;
 
-		$attachment_metadata = $image_meta['_wp_attachment_metadata'];
 		// Determine if we already have an image of this size
-		if ( isset( $attachment_metadata['sizes'] ) && (count( $attachment_metadata['sizes'] ) > 0) && ( isset( $attachment_metadata['sizes'][$intermediate_size] ) ) ) {
+		if ( isset( $attachment_metadata['sizes'] ) && count( $attachment_metadata['sizes'] ) && ( isset( $attachment_metadata['sizes'][ $intermediate_size ] ) ) ) {
 			$intermediate_image_data = image_get_intermediate_size( $attachment_id, $intermediate_size );
-			$image_url = $intermediate_image_data['url'];
+			$image_url               = $intermediate_image_data['url'];
 		} else {
 			$image_url = home_url( "index.php?wpsc_action=scale_image&attachment_id={$attachment_id}&width=$width&height=$height" );
 		}
 	// Not enough info so attempt to fallback
 	} else {
 
-		if ( !empty( $attachment_id ) ) {
+		if ( ! empty( $attachment_id ) ) {
 			$image_url = home_url( "index.php?wpsc_action=scale_image&attachment_id={$attachment_id}&width=$width&height=$height" );
 		} else {
 			$image_url = false;
 		}
 
 	}
-	if(empty($image_url) && !empty($file_path)){
+
+	if ( empty( $image_url ) && ! empty( $file_path ) ) {
+
 		$image_meta = get_post_meta( $attachment_id, '_wp_attached_file' );
-		if ( ! empty( $image_meta ) )
-			$image_url = $uploads['baseurl'].'/'.$image_meta[0];
+
+		if ( ! empty( $image_meta ) ) {
+			$image_url = $uploads['baseurl'] . '/' . $image_meta[0];
+		}
 	}
 
-	return apply_filters( 'wpsc_product_image', set_url_scheme( $image_url ) );
+	/**
+	 * The filter here and in wpsc_the_product_image() were unfortunately named, as were the functions.
+	 * They do very different things but are named as if they do not.  The onus will be on the
+	 * plugin developer to check if the second parameter is an attachment ID or a product ID.
+	 *
+	 * @since 3.8
+	 */
+	return apply_filters( 'wpsc_product_image', set_url_scheme( $image_url ), $attachment_id );
 }
 
 function wpsc_product_no_image_fallback( $image_url = '' ) {
-	if ( !empty( $image_url ) )
+	if ( ! empty( $image_url ) ) {
 		return $image_url;
-	else
+	} else {
 		return apply_filters( 'wpsc_product_noimage', WPSC_CORE_THEME_URL . 'wpsc-images/noimage.png' );
+	}
 }
-add_filter( 'wpsc_product_image', 'wpsc_product_no_image_fallback' );
 
+add_filter( 'wpsc_product_image', 'wpsc_product_no_image_fallback' );
 
 /**
  * wpsc show pnp function
@@ -618,8 +630,10 @@ function wpsc_the_product_price( $no_decimals = false, $only_normal_price = fals
 				$price = $special_price;
 		}
 
-		if ( $no_decimals == true )
-			$price = array_shift( explode( ".", $price ) );
+		if ( true == $no_decimals ) {
+			$price = explode( ".", $price );
+			$price = array_shift( $price );
+		}
 
 		$price = apply_filters( 'wpsc_do_convert_price', $price, $product_id );
 		$args = array(
@@ -747,7 +761,8 @@ function wpsc_product_has_stock( $id = null ) {
 				return true;
 		}
 	} elseif ( $stock > 0 ) {
-		$claimed_stock = $wpdb->get_var("SELECT SUM(`stock_claimed`) FROM `".WPSC_TABLE_CLAIMED_STOCK."` WHERE `product_id` IN($id)");
+		$claimed_query = new WPSC_Claimed_Stock( array( 'product_id' => $id ) );
+		$claimed_stock = $claimed_query->get_claimed_stock_count();
 		if( $stock - $claimed_stock > 0 )
 			return true;
 	}
@@ -902,7 +917,7 @@ function wpsc_product_has_supplied_file() {
  * wpsc product postage and packaging function
  * @return string - currently only valid for flat rate
  */
-function wpsc_product_postage_and_packaging() {
+function wpsc_product_postage_and_packaging( $id = null ) {
 	if ( isset( $id ) && is_numeric( $id ) && ($id > 0) )
 		$id = absint( $id );
 	else
@@ -948,7 +963,7 @@ function wpsc_the_product_image( $width = '', $height = '', $product_id = '' ) {
 	// Ref: http://core.trac.wordpress.org/ticket/23605
 	$src = str_replace( ' ', '%20', $src );
 
-	return apply_filters( 'wpsc_product_image', set_url_scheme( $src ) );
+	return apply_filters( 'wpsc_product_image', set_url_scheme( $src ), $product_id, $product );
 }
 
 /**
@@ -987,19 +1002,18 @@ function wpsc_the_product_thumbnail( $width = null, $height = null, $product_id 
 
 	$thumbnail_id = wpsc_the_product_thumbnail_id( $product_id );
 
-	// If no thumbnail found for item, get it's parent image (props. TJM)
-	if ( ! $thumbnail_id && $product->post_parent )
+	// If no thumbnail found for item, get its parent image
+	if ( ! $thumbnail_id && ( is_a( $product, 'WP_Post' ) && $product->post_parent ) ) {
 		$thumbnail_id = wpsc_the_product_thumbnail_id( $product->post_parent );
+	}
 
 	// if still no thumbnail ID is found, return our fallback function
-	if ( ! $thumbnail_id )
+	if ( ! $thumbnail_id ) {
 		return wpsc_product_image();
+	}
 
 	if ( ! $page ) {
-		if ( is_single() )
-			$page = 'single';
-		else
-			$page = 'products-page';
+		$page = is_single() ? 'single' : 'products-page';
 	}
 
 	if ( ! $width && ! $height ) {
@@ -1071,7 +1085,7 @@ function wpsc_the_product_thumbnail( $width = null, $height = null, $product_id 
 	// Ref: http://core.trac.wordpress.org/ticket/23605
 	$thumbnail = str_replace( ' ', '%20', $thumbnail );
 
-	return apply_filters( 'wpsc_the_product_thumbnail', set_url_scheme( $thumbnail ) );
+	return apply_filters( 'wpsc_the_product_thumbnail', set_url_scheme( $thumbnail ), $product_id, $product );
 }
 
 /**
@@ -1158,7 +1172,7 @@ function wpsc_have_custom_meta() {
  */
 function wpsc_the_custom_meta() {
 	global $wpsc_custom_meta;
-	return esc_html( $wpsc_custom_meta->the_custom_meta() );
+	return $wpsc_custom_meta->the_custom_meta();
 }
 
 /**

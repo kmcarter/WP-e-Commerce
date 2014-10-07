@@ -5,15 +5,15 @@
  */
 class ash_ups {
 	var $internal_name, $name;
-	var $service_url = "";
-	var $Services = "";
+	var $service_url = '';
+	var $Services = '';
 	var $singular_shipping = FALSE;
 	var $shipment;
 	var $is_external = true;
 
 	function ash_ups () {
-		$this->internal_name = "ups";
-		$this->name = _x( "UPS", 'Shipping Module', 'wpsc' );
+		$this->internal_name = 'ups';
+		$this->name = _x( 'UPS', 'Shipping Module', 'wpsc' );
 		$this->is_external = true;
 		$this->requires_curl = true;
 		$this->requires_weight = true;
@@ -24,7 +24,7 @@ class ash_ups {
 	}
 
 	function __autoload ( $name ) {
-		include( "../wpsc-includes/shipping.helper.php" );
+		include( '../wpsc-includes/shipping.helper.php' );
 	}
 
 	function getId () {
@@ -38,13 +38,13 @@ class ash_ups {
 
 	private function _setServiceURL () {
 		global $wpdb;
-		$wpsc_ups_settings = get_option( "wpsc_ups_settings" );
-		$wpsc_ups_environment = ( array_key_exists( "upsenvironment", (array) $wpsc_ups_settings ) ) ? $wpsc_ups_settings["upsenvironment"] : "0"; //(1) testing, else (0) production.
+		$wpsc_ups_settings = get_option( 'wpsc_ups_settings' );
+		$wpsc_ups_environment = ( array_key_exists( 'upsenvironment', (array) $wpsc_ups_settings ) ) ? $wpsc_ups_settings['upsenvironment'] : '0'; //(1) testing, else (0) production.
 
-		if ( $wpsc_ups_environment == "1" ){
-			$this->service_url = "https://wwwcie.ups.com/ups.app/xml/Rate";
+		if ( '1' == $wpsc_ups_environment ){
+			$this->service_url = 'https://wwwcie.ups.com/ups.app/xml/Rate';
 		} else {
-			$this->service_url = "https://www.ups.com/ups.app/xml/Rate";
+			$this->service_url = 'https://www.ups.com/ups.app/xml/Rate';
 		}
 	}
 
@@ -58,39 +58,39 @@ class ash_ups {
 
 	private function _includeUPSData () {
 		$this->drop_types = array(
-			"01" => __( "Daily Pickup", 'wpsc' ),
-			"03" => __( "Customer Counter", 'wpsc' ),
-			"06" => __( "One Time Pickup", 'wpsc' ),
-			"07" => __( "On Call Air", 'wpsc' ),
-			"19" => __( "Letter Center", 'wpsc' ),
-			"20" => __( "Air Service Center", 'wpsc' ),
-			"11" => __( "Suggested Retail Rates (Advanced Config)", 'wpsc' ),
+			'01' => __( 'Daily Pickup', 'wpsc' ),
+			'03' => __( 'Customer Counter', 'wpsc' ),
+			'06' => __( 'One Time Pickup', 'wpsc' ),
+			'07' => __( 'On Call Air', 'wpsc' ),
+			'19' => __( 'Letter Center', 'wpsc' ),
+			'20' => __( 'Air Service Center', 'wpsc' ),
+			'11' => __( 'Suggested Retail Rates (Advanced Config)', 'wpsc' ),
 		);
 
 		$this->cust_types = array(
-			"01" => __( "Daily Pickup, with UPS Account", 'wpsc' ),
-			"03" => __( "No Daily Pickup, with No or Other Account", 'wpsc' ),
-			"04" => __( "Retail Outlet (Only US origin shipments)", 'wpsc' )
+			'01' => __( 'Daily Pickup, with UPS Account', 'wpsc' ),
+			'03' => __( 'No Daily Pickup, with No or Other Account', 'wpsc' ),
+			'04' => __( 'Retail Outlet (Only US origin shipments)', 'wpsc' )
 		);
 
 		$this->Services = array(
-			"14" => __( "Next Day Air Early AM", 'wpsc' ),
-			"01" => __( "Next Day Air", 'wpsc' ),
-			"13" => __( "Next Day Air Saver", 'wpsc' ),
-			"59" => __( "2nd Day Air AM", 'wpsc' ),
-			"02" => __( "2nd Day Air", 'wpsc' ),
-			"12" => __( "3 Day Select", 'wpsc' ),
-			"03" => __( "Ground", 'wpsc' ),
-			"11" => __( "Standard", 'wpsc' ),
-			"07" => __( "Worldwide Express", 'wpsc' ),
-			"54" => __( "Worldwide Express Plus", 'wpsc' ),
-			"08" => __( "Worldwide Expedited", 'wpsc' ),
-			"65" => __( "Saver", 'wpsc' ),
-			"82" => __( "UPS Today Standard", 'wpsc' ),
-			"83" => __( "UPS Today Dedicated Courier", 'wpsc' ),
-			"84" => __( "UPS Today Intercity", 'wpsc' ),
-			"85" => __( "UPS Today Express", 'wpsc' ),
-			"86" => __( "UPS Today Express Saver", 'wpsc' )
+			'14' => __( 'Next Day Air Early AM', 'wpsc' ),
+			'01' => __( 'Next Day Air', 'wpsc' ),
+			'13' => __( 'Next Day Air Saver', 'wpsc' ),
+			'59' => __( '2nd Day Air AM', 'wpsc' ),
+			'02' => __( '2nd Day Air', 'wpsc' ),
+			'12' => __( '3 Day Select', 'wpsc' ),
+			'03' => __( 'Ground', 'wpsc' ),
+			'11' => __( 'Standard', 'wpsc' ),
+			'07' => __( 'Worldwide Express', 'wpsc' ),
+			'54' => __( 'Worldwide Express Plus', 'wpsc' ),
+			'08' => __( 'Worldwide Expedited', 'wpsc' ),
+			'65' => __( 'Saver', 'wpsc' ),
+			'82' => __( 'UPS Today Standard', 'wpsc' ),
+			'83' => __( 'UPS Today Dedicated Courier', 'wpsc' ),
+			'84' => __( 'UPS Today Intercity', 'wpsc' ),
+			'85' => __( 'UPS Today Express', 'wpsc' ),
+			'86' => __( 'UPS Today Express Saver', 'wpsc' )
 		);
 	}
 
@@ -99,8 +99,8 @@ class ash_ups {
 			$this->_includeUPSData();
 		}
 		//__('Your Packaging', 'wpsc');  <-- use to translate
-		$wpsc_ups_settings = get_option( "wpsc_ups_settings" );
-		$wpsc_ups_services = get_option( "wpsc_ups_services" );
+		$wpsc_ups_settings = get_option( 'wpsc_ups_settings' );
+		$wpsc_ups_services = get_option( 'wpsc_ups_services' );
 		// Defined on page 41 in UPS API documentation RSS_Tool_06_10_09.pdf
 		/*$packaging_options['00'] = __('**UNKNOWN**', 'wpsc');*/
 		$packaging_options['01'] = __( 'UPS Letter', 'wpsc' );
@@ -119,22 +119,22 @@ class ash_ups {
 				<td><?php _e( 'Destination Type', 'wpsc' ); ?></td>
 				<td>
 					<label>
-						<input type='radio' <?php checked( $wpsc_ups_settings['49_residential'] != "2" ); ?> value='1' name='wpsc_ups_settings[49_residential]' />
+						<input type='radio' <?php checked( '2' != $wpsc_ups_settings['49_residential'] ); ?> value='1' name='wpsc_ups_settings[49_residential]' />
 						<?php _e( 'Residential Address', 'wpsc' ); ?>
 					</label><br />
-					<label><input type='radio' <?php checked( $wpsc_ups_settings['49_residential'] == "2" ); ?>value='2' name='wpsc_ups_settings[49_residential]' />
+					<label><input type='radio' <?php checked( '2' == $wpsc_ups_settings['49_residential'] ); ?>value='2' name='wpsc_ups_settings[49_residential]' />
 						<?php _e( 'Commercial Address', 'wpsc' )?>
 					</label>
 				</td>
 			</tr>
 
 			<?php
-				$sel2_drop = "";
-				if ( empty( $wpsc_ups_settings['DropoffType'] ) ) {
-					$sel2_drop = "01";
-				} else {
-					$sel2_drop = $wpsc_ups_settings['DropoffType'];
-				}
+			$sel2_drop = '';
+			if ( empty( $wpsc_ups_settings['DropoffType'] ) ) {
+				$sel2_drop = '01';
+			} else {
+				$sel2_drop = $wpsc_ups_settings['DropoffType'];
+			}
 			?>
 			<tr>
 				<td><?php _e( 'Dropoff Type', 'wpsc' ); ?></td>
@@ -160,9 +160,9 @@ class ash_ups {
 			</tr>
 
 			<?php
-				$sel3_drop = "";
+				$sel3_drop = '';
 				if ( empty( $wpsc_ups_settings['CustomerType'] ) ) {
-					$sel3_drop = "01";
+					$sel3_drop = '01';
 				} else {
 					$sel3_drop = $wpsc_ups_settings['CustomerType'];
 				}
@@ -170,7 +170,7 @@ class ash_ups {
 			<tr>
 				<td><?php _e( 'Customer Type', 'wpsc' ); ?></td>
 				<td>
-					<select id='cust_type' name='wpsc_ups_settings[CustomerType]' <?php disabled( $wpsc_ups_settings['DropoffType'] != "11" ); ?> >
+					<select id='cust_type' name='wpsc_ups_settings[CustomerType]' <?php disabled( $wpsc_ups_settings['DropoffType'] != '11' ); ?> >
 						<?php foreach( array_keys( $this->cust_types ) as $dkey ): ?>
 							<option value="<?php esc_attr_e( $dkey ); ?>" <?php selected( $sel3_drop == $dkey ); ?> >
 								<?php echo( $this->cust_types[$dkey] ); ?>
@@ -184,8 +184,8 @@ class ash_ups {
 				<td><?php _e( 'Packaging', 'wpsc' ); ?></td>
 				<td>
 					<select name='wpsc_ups_settings[48_container]'>
-						<?php foreach( $packaging_options as $key => $name ): ?>
-							<option value='<?php esc_attr_e( $key ); ?>' <?php selected( $key == $wpsc_ups_settings['48_container'] ) ;?>>
+						<?php foreach ( $packaging_options as $key => $name ): ?>
+							<option value='<?php esc_attr_e( $key ); ?>' <?php selected( $key == $wpsc_ups_settings['48_container'] );?>>
 								<?php esc_html_e( $name ); ?>
 							</option>
 						<?php endforeach; ?>
@@ -196,19 +196,19 @@ class ash_ups {
 			<tr>
 				<td><?php _e( 'Shipping Settings', 'wpsc' ); ?></td>
 				<td>
-					<input type="checkbox" id="ups_env_test" name="wpsc_ups_settings[upsenvironment]" value="1" <?php checked( 1, $wpsc_ups_settings['upsenvironment'] ); ?> />
+					<input type="checkbox" id="ups_env_test" name="wpsc_ups_settings[upsenvironment]" value="1" <?php checked( 1, isset( $wpsc_ups_settings['upsenvironment'] ) && (bool) $wpsc_ups_settings['upsenvironment'] ); ?> />
 					<label for="ups_env_test" ><?php _e( 'Use Testing Environment', 'wpsc' ); ?></label>
 					<br />
-					<input type="checkbox" id="ups_negotiated_rates" name="wpsc_ups_settings[ups_negotiated_rates]" value="1" <?php checked( 1, $wpsc_ups_settings['ups_negotiated_rates'] ); ?> />
+					<input type="checkbox" id="ups_negotiated_rates" name="wpsc_ups_settings[ups_negotiated_rates]" value="1" <?php checked( 1, isset( $wpsc_ups_settings['ups_negotiated_rates'] ) && (bool) $wpsc_ups_settings['ups_negotiated_rates'] ); ?> />
 					<label for="ups_negotiated_rates" ><?php _e( 'Show UPS negotiated rates', 'wpsc' ); ?> *</label>
 					<br />
-					<input type="checkbox" id="ups_insured_shipment" name="wpsc_ups_settings[insured_shipment]" value="1" <?php checked( 1, $wpsc_ups_settings['insured_shipment'] ); ?> />
+					<input type="checkbox" id="ups_insured_shipment" name="wpsc_ups_settings[insured_shipment]" value="1" <?php checked( 1, isset( $wpsc_ups_settings['insured_shipment'] ) && (bool) $wpsc_ups_settings['insured_shipment'] ); ?> />
 					<label for="ups_insured_shipment" ><?php _e( 'Insure shipment against cart total', 'wpsc' ); ?> *</label>
 					<br />
-					<input type="checkbox" id="ups_singular_shipping" name="wpsc_ups_settings[singular_shipping]" value="1" <?php checked( 1, $wpsc_ups_settings['singular_shipping'] ); ?> />
+					<input type="checkbox" id="ups_singular_shipping" name="wpsc_ups_settings[singular_shipping]" value="1" <?php checked( 1, isset( $wpsc_ups_settings['singular_shipping'] ) && (bool) $wpsc_ups_settings['singular_shipping'] ); ?> />
 					<label for="ups_singular_shipping" ><?php _e( 'Singular Shipping', 'wpsc' ); ?> *</label>
 					<p class='description'><?php _e( 'Rate each quantity of items in a cart as its own package using dimensions on product', 'wpsc' ); ?></p>
-					<input type="checkbox" id="ups_intl_rate" name="wpsc_ups_settings[intl_rate]" value="1" <?php checked( 1, $wpsc_ups_settings['intl_rate'] ); ?> />
+					<input type="checkbox" id="ups_intl_rate" name="wpsc_ups_settings[intl_rate]" value="1" <?php checked( 1, isset( $wpsc_ups_settings['intl_rate'] ) && (bool) $wpsc_ups_settings['intl_rate'] ); ?> />
 					<label for="ups_intl_rate" ><?php _e( 'Disable International Shipping', 'wpsc' ); ?></label>
 					<p class='description'><?php _e( 'No shipping rates will be displayed if the shipment destination country is different than your base country/region.', 'wpsc' ); ?></p>
 				</td>
@@ -340,7 +340,7 @@ class ash_ups {
 	private function _declared_value( &$pack, $package, $args ){
 		$pack["PackageServiceOptions"]["DeclaredValue"] = array(
 			"CurrencyCode" => $args["currency"],
-			"MonetaryValue" => $args["cart_total"]
+			"MonetaryValue" => $package->value //Per package value, not total value
 		);
 	}
 
@@ -498,13 +498,13 @@ class ash_ups {
 		// If there is a specific service being requested then
 		// we want to pass the service into the XML
 		if ( isset( $args["service"] ) ) {
-		   $Shipment .=  array( "Service" => array( "Code" => $args['service'] ) );
+		   $Shipment .= $this->array2xml( array( "Service" => array( "Code" => $args['service'] ) ) );
 		}
 
 		// Include this only if you want negotiated rates
 		if ( array_key_exists( 'negotiated_rates', $args ) ){
 			if ( $args['negotiated_rates'] == "1" ) {
-				$Shipment .= array( "RateInformation" => array( "NegotiatedRatesIndicator" => "" ) );
+				$Shipment .= $this->array2xml( array( "RateInformation" => array( "NegotiatedRatesIndicator" => "" ) ) );
 			}
 		}
 
@@ -610,32 +610,32 @@ class ash_ups {
 				}
 				return false;
 			} else {
-				$RateBlocks = $objDOM->getElementsByTagName( "RatedShipment" );
+				$RateBlocks = $objDOM->getElementsByTagName( 'RatedShipment' );
 				foreach ( $RateBlocks as $rate_block ) {
 					// Get the <Service> Node from the XML chunk
-					$getServiceNode = $rate_block->getElementsByTagName( "Service" );
+					$getServiceNode = $rate_block->getElementsByTagName( 'Service' );
 					$serviceNode = $getServiceNode->item( 0 );
 
 					// Get the <Code> Node from the <Service> chunk
-					$getServiceCodeNode = $serviceNode->getElementsByTagName( "Code" );
+					$getServiceCodeNode = $serviceNode->getElementsByTagName( 'Code' );
 					// Get the value from <Code>
 					$serviceCode = $getServiceCodeNode->item( 0 )->nodeValue;
 					$go = true;
-					$price = "";
-					$time = "";
+					$price = '';
+					$time = '';
 
 					//if (array_key_exists('ups_negotiated_rates', $config)){
-					$getNegotiatedRateNode = $rate_block->getElementsByTagName( "NegotiatedRates" );
+					$getNegotiatedRateNode = $rate_block->getElementsByTagName( 'NegotiatedRates' );
 					if ( $getNegotiatedRateNode ) {
 						$negotiatedRateNode = $getNegotiatedRateNode->item( 0 );
 						if ( $negotiatedRateNode ) {
-							$getNetSummaryNode = $negotiatedRateNode->getElementsByTagName( "NetSummaryCharges" );
+							$getNetSummaryNode = $negotiatedRateNode->getElementsByTagName( 'NetSummaryCharges' );
 							$netSummaryNode = $getNetSummaryNode->item( 0 );
 
-							$getGrandTotalNode = $netSummaryNode->getElementsByTagName( "GrandTotal" );
+							$getGrandTotalNode = $netSummaryNode->getElementsByTagName( 'GrandTotal' );
 							$grandTotalNode = $getGrandTotalNode->item( 0 );
 
-							$getMonetaryNode = $grandTotalNode->getElementsByTagName( "MonetaryValue" );
+							$getMonetaryNode = $grandTotalNode->getElementsByTagName( 'MonetaryValue' );
 							$monetaryNode = $getMonetaryNode->item( 0 )->nodeValue;
 							if ( ! empty( $monetaryNode ) ) {
 								$go = false;
@@ -645,25 +645,18 @@ class ash_ups {
 					}
 
 					// Get the <TotalCharges> Node from the XML chunk
-					$getChargeNodes = $rate_block->getElementsByTagName( "TotalCharges" );
-					$chargeNode = $getChargeNodes->item( 0 );
-/*
-					$getDeliveryNode = $rate_block->getElementsByTagName("GuaranteedDaysToDelivery");
-					$deliveryDays = $getDeliveryNode->item(0)->nodeValue;
-					if ($deliveryDays){
-						$time = $this->futureDate($deliveryDays);
-					}else{
-						$time = $this->futureDate(6);
-					}
-*/
+					$getChargeNodes = $rate_block->getElementsByTagName( 'TotalCharges' );
+					$chargeNode     = $getChargeNodes->item( 0 );
+
 					// Get the <CurrencyCode> from the <TotalCharge> chunk
-					$getCurrNode= $chargeNode->getElementsByTagName( "CurrencyCode" );
+					$getCurrNode = $chargeNode->getElementsByTagName( 'CurrencyCode' );
+
 					// Get the value of <CurrencyCode>
 					$currCode = $getCurrNode->item( 0 )->nodeValue;
 
 					if ( $go == true ){
 						// Get the <MonetaryValue> from the <TotalCharge> chunk
-						$getMonetaryNode= $chargeNode->getElementsByTagName( "MonetaryValue" );
+						$getMonetaryNode = $chargeNode->getElementsByTagName( 'MonetaryValue' );
 						// Get the value of <MonetaryValue>
 						$price = $getMonetaryNode->item( 0 )->nodeValue;
 					}
@@ -672,7 +665,7 @@ class ash_ups {
 					// are not explicitly defined.
 					if ( ! empty( $wpsc_ups_services ) ) {
 						if ( is_array( $wpsc_ups_services ) ) {
-							if ( array_search( $serviceCode, (array) $wpsc_ups_services) === false ) {
+							if ( array_search( $serviceCode, (array) $wpsc_ups_services ) === false ) {
 								continue;
 							}
 						} else if ( $wpsc_ups_services != $serviceCode ) {
@@ -682,12 +675,13 @@ class ash_ups {
 					if ( array_key_exists( $serviceCode, (array) $this->Services ) ) {
 						$rate_table[ $this->Services[ $serviceCode ] ] = array( $currCode, $price );
 					}
-
 				} // End foreach rated shipment block
 			}
 		}
 		// Reverse sort the rate selection so it is cheapest first!
-		asort( $rate_table );
+		if ( ! empty( $rate_table ) ) {
+			asort( $rate_table );
+		}
 		return $rate_table;
 	}
 
@@ -706,9 +700,10 @@ class ash_ups {
 		}
 		$finalTable = array();
 		foreach ( array_keys( $services ) as $service ) {
-			if ($currency != false && $currency != $services[ $service ][0] ) {
+			if ( $currency != false && $currency != $services[ $service ][0] ) {
 				$temp = $services[ $service ][1];
-				$services[ $service ][1] = $converter->convert( $services[ $service ][1],
+				$services[ $service ][1] = $converter->convert(
+					$services[ $service ][1],
 					$currency,
 					$services[ $service ][0]
 				);
@@ -719,114 +714,128 @@ class ash_ups {
 	}
 
 	function getQuote() {
-		global $wpdb, $wpec_ash, $wpsc_cart;
+		global $wpdb, $wpec_ash, $wpsc_cart, $wpec_ash_tools;
 		// Arguments array for various functions to use
 		$args = array();
-		
-		$args['dest_ccode'] = wpsc_get_customer_meta( 'shipping_country' );
-		if ( $args['dest_ccode'] == "UK" )
-			// So, UPS is a little off the times
-			$args['dest_ccode'] = "GB";
+
+		$args['dest_ccode'] = wpsc_get_customer_meta( 'shippingcountry' );
+
 		// Get the ups settings from the ups account info page (Shipping tab)
-		$wpsc_ups_settings = get_option( "wpsc_ups_settings", array() );
+		$wpsc_ups_settings = get_option( 'wpsc_ups_settings', array() );
+
 		//Disable International Shipping. Default: Enabled, as it currently is.
 		$args['intl_rate'] = isset( $wpsc_ups_settings['intl_rate'] ) && ! empty( $wpsc_ups_settings['intl_rate'] ) ? FALSE : TRUE;
-		if ( ! $args['intl_rate'] && $args['dest_ccode'] != get_option( 'base_country' ) )
+		if ( ! $args['intl_rate'] && $args['dest_ccode'] != get_option( 'base_country' ) ) {
 			return array();
-		
+		}
+
 		// Destination zip code
-		// If ths zip code is provided via a form post use it!
-		$args['dest_pcode'] = (string) wpsc_get_customer_meta( 'shipping_zip' );
-		if ( isset( $_POST['zipcode'] ) && ( $_POST['zipcode'] != __( "Your Zipcode", 'wpsc' ) && $_POST['zipcode'] != "YOURZIPCODE" ) )
-			$args['dest_pcode'] = esc_attr( $_POST['zipcode'] );
-		if ( in_array( $args['dest_pcode'], array( __( 'Your Zipcode', 'wpsc' ), 'YOURZIPCODE' ) ) )
-			$args['dest_pcode'] = '';
-		if( ! empty ( $args['dest_pcode'] ) )
-			wpsc_update_customer_meta( 'shipping_zip', $args['dest_pcode'] );
-		if ( empty ( $args['dest_pcode'] ) )
+		$args['dest_pcode'] = (string) wpsc_get_customer_meta( 'shippingpostcode' );
+
+		if ( ! is_object( $wpec_ash_tools ) ) {
+			$wpec_ash_tools = new ASHTools();
+		}
+
+		if ( empty( $args['dest_pcode'] ) && $wpec_ash_tools->needs_post_code( $args['dest_ccode'] ) ) {
 			// We cannot get a quote without a zip code so might as well return!
 			return array();
-		
+		}
+
 		// Get the total weight from the shopping cart
 		$args['weight'] = wpsc_cart_weight_total();
-		if ( empty( $args["weight"] ) )
+		if ( empty( $args['weight'] ) ) {
 			return array();
-		
-		// If the region code is provided via a form post use it!
-		if ( isset( $_POST['region'] ) && ! empty( $_POST['region'] ) ) {
-			$query = $wpdb->prepare( "SELECT `" . WPSC_TABLE_REGION_TAX . "`.* FROM `" . WPSC_TABLE_REGION_TAX . "` WHERE `" . WPSC_TABLE_REGION_TAX . "`.`id` = %d", $_POST['region'] );
-			$dest_region_data = $wpdb->get_results( $query, ARRAY_A );
-			$args['dest_state'] = ( is_array( $dest_region_data ) ) ? $dest_region_data[0]['code'] : "";
-			wpsc_update_customer_meta( 'shipping_state', $args['dest_state'] ); //Unify state meta.
-		} else if ( $dest_state = wpsc_get_customer_meta( 'shipping_state' ) ) {
-			// Well, we have a zip code in the session and no new one provided
-			$args['dest_state'] = $dest_state;
-		} else {
-			$args['dest_state'] = "";
 		}
-		
-		if ( ! is_object( $wpec_ash ) )
+
+		$args['dest_state'] = '';
+
+		$wpsc_country = new WPSC_Country( wpsc_get_customer_meta( 'shippingcountry' ) );
+
+		if ( $wpsc_country->has_regions() ) {
+			$wpsc_region = $wpsc_country->get_region( wpsc_get_customer_meta( 'shippingregion' )  );
+			if ( $wpsc_region ) {
+				$args['dest_state'] = $wpsc_region->get_code();
+			}
+		}
+
+		if ( empty ( $args['dest_state'] ) ) {
+			$args['dest_state'] = wpsc_get_customer_meta( 'shippingstate' );
+		}
+
+		if ( ! is_object( $wpec_ash ) ) {
 			$wpec_ash = new ASH();
-		
-		$shipping_cache_check['state'] = $args['dest_state']; //The destination is needed for cached shipment check.
+		}
+
+		$shipping_cache_check['state']   = $args['dest_state']; //The destination is needed for cached shipment check.
 		$shipping_cache_check['country'] = $args['dest_ccode'];
 		$shipping_cache_check['zipcode'] = $args['dest_pcode'];
+
 		$this->shipment = $wpec_ash->get_shipment();
 		$this->shipment->set_destination( $this->internal_name, $shipping_cache_check ); //Set this shipment's destination.
-		$this->shipment->rates_expire = date('Y-m-d');
+		$this->shipment->rates_expire = date( 'Y-m-d' );
+		$args['shipper'] = $this->internal_name;
 
-		$args["singular_shipping"] = ( array_key_exists( "singular_shipping", $wpsc_ups_settings ) ) ? $wpsc_ups_settings["singular_shipping"]    : "0";
-		if ( $args['weight'] > 150 && ! (boolean) $args["singular_shipping"] ) { // This is where shipping breaks out of UPS if weight is higher than 150 LBS
-				$over_weight_txt = __( 'Your order exceeds the standard shipping weight limit. Please contact us to quote other shipping alternatives.', 'wpsc' );
+		$args['singular_shipping'] = ( array_key_exists( 'singular_shipping', $wpsc_ups_settings ) ) ? $wpsc_ups_settings['singular_shipping']    : '0';
+		if ( $args['weight'] > 150 && ! (boolean) $args['singular_shipping'] ) { // This is where shipping breaks out of UPS if weight is higher than 150 LBS
+				$over_weight_txt = apply_filters(
+						'wpsc_shipment_over_weight',
+						__( 'Your order exceeds the standard shipping weight limit. Please contact us to quote other shipping alternatives.', 'wpsc' ),
+						$args
+					);
 				$shipping_quotes[$over_weight_txt] = 0; // yes, a constant.
 				$wpec_ash->cache_results( $this->internal_name, array( $shipping_quotes ), $this->shipment ); //Update shipment cache.
 				return array( $shipping_quotes );
 		}
-		
+
 		$cache = $wpec_ash->check_cache( $this->internal_name, $this->shipment ); //And now, we're ready to check cache.
-		
+
 		// We do not want to spam UPS (and slow down our process) if we already
 		// have a shipping quote!
-		if ( count( $cache['rate_table'] ) >= 1 ) //$cache['rate_table'] could be array(0)..
+		if ( count( $cache['rate_table'] ) >= 1 ) {
 			return $cache['rate_table'];
+		}
 
 		// Final rate table
 		$rate_table = array();
 
 		// API Auth settings //
-		$args['username']          = ( array_key_exists( 'upsaccount',           $wpsc_ups_settings ) ) ? $wpsc_ups_settings['upsusername']          : "";
-		$args['password']          = ( array_key_exists( 'upspassword',          $wpsc_ups_settings ) ) ? $wpsc_ups_settings['upspassword']          : "";
-		$args['api_id']            = ( array_key_exists( 'upsid',                $wpsc_ups_settings ) ) ? $wpsc_ups_settings['upsid']                : "";
-		$args['account_number']    = ( array_key_exists( 'upsaccount',           $wpsc_ups_settings ) ) ? $wpsc_ups_settings['upsaccount']           : "";
-		$args['negotiated_rates']  = ( array_key_exists( 'ups_negotiated_rates', $wpsc_ups_settings ) ) ? $wpsc_ups_settings['ups_negotiated_rates'] : "";
+		$args['username']          = ( array_key_exists( 'upsaccount',           $wpsc_ups_settings ) ) ? $wpsc_ups_settings['upsusername']          : '';
+		$args['password']          = ( array_key_exists( 'upspassword',          $wpsc_ups_settings ) ) ? $wpsc_ups_settings['upspassword']          : '';
+		$args['api_id']            = ( array_key_exists( 'upsid',                $wpsc_ups_settings ) ) ? $wpsc_ups_settings['upsid']                : '';
+		$args['account_number']    = ( array_key_exists( 'upsaccount',           $wpsc_ups_settings ) ) ? $wpsc_ups_settings['upsaccount']           : '';
+		$args['negotiated_rates']  = ( array_key_exists( 'ups_negotiated_rates', $wpsc_ups_settings ) ) ? $wpsc_ups_settings['ups_negotiated_rates'] : '';
 		$args['residential']       = $wpsc_ups_settings['49_residential'];
-		$args['insured_shipment']  = ( array_key_exists( "insured_shipment",     $wpsc_ups_settings ) ) ? $wpsc_ups_settings["insured_shipment"]     : "0";
+		$args['insured_shipment']  = ( array_key_exists( 'insured_shipment',     $wpsc_ups_settings ) ) ? $wpsc_ups_settings['insured_shipment']     : '0';
 		// What kind of pickup service do you use ?
 		$args['DropoffType']       = $wpsc_ups_settings['DropoffType'];
 		$args['packaging']         = $wpsc_ups_settings['48_container'];
 		// Preferred Currency to display
-		$currency_data = $wpdb->get_row( $wpdb->prepare( "SELECT `code` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `isocode`= %s LIMIT 1", get_option( 'currency_type' ) ), ARRAY_A );
-		if ( $currency_data ) {
-			$args['currency'] = $currency_data['code'];
+		$currency_data = WPSC_Countries::get_currency_code( get_option( 'currency_type' ) );
+		if ( ! empty( $currency_data ) ) {
+			$args['currency'] = $currency_data;
 		} else {
-			$args['currency'] = "USD";
+			$args['currency'] = 'USD';
 		}
 		// Shipping billing / account address
-		$origin_region_data = $wpdb->get_results( $wpdb->prepare( "SELECT `" . WPSC_TABLE_REGION_TAX . "`.* FROM `" . WPSC_TABLE_REGION_TAX . "` WHERE `" . WPSC_TABLE_REGION_TAX . "`.`id` = %d", get_option( 'base_region' ) ), ARRAY_A );
-		$args['shipr_state'] = ( is_array( $origin_region_data ) ) ? $origin_region_data[0]['code'] : "";
+		$region = new WPSC_Region( get_option( 'base_country' ), get_option( 'base_region' ) );
+
+		$args['shipr_state'] = $region->get_code();
 		$args['shipr_city']  = get_option( 'base_city' );
 		$args['shipr_ccode'] = get_option( 'base_country' );
 		$args['shipr_pcode'] = get_option( 'base_zipcode' );
+
 		// Physical Shipping address being shipped from
 		$args['shipf_state'] = $args['shipr_state'];
 		$args['shipf_city']  = $args['shipr_city'];
 		$args['shipf_ccode'] = $args['shipr_ccode'];
 		$args['shipf_pcode'] = $args['shipr_pcode'];
-		$args['units'] = "LBS";
-		$args['shipper']	 = $this->internal_name;
-		$args = apply_filters( 'wpsc_shipment_data', $args, $this->shipment );
+		$args['units']       = 'LBS';
 
-		$args["cart_total"] = $wpsc_cart->calculate_subtotal( true );
+		$args['cart_total'] = $wpsc_cart->calculate_subtotal( true );
+		$args = apply_filters( 'wpsc_shipment_data', $args, $this->shipment );
+		if ( isset( $args['stop'] ) ) { //Do not get rates.
+			return array();
+		}
 		// Build the XML request
 		$request = $this->_buildRateRequest( $args );
 		// Now that we have the message to send ... Send it!
@@ -838,21 +847,19 @@ class ash_ups {
 		if ( $quotes != false ) {
 			$rate_table = apply_filters( 'wpsc_rates_table', $this->_formatTable( $quotes, $args['currency'] ), $args, $this->shipment );
 		} else {
-			if ( $wpsc_ups_settings['upsenvironment'] == '1' ) {
-				echo "<strong>:: GetQuote ::DEBUG OUTPUT::</strong><br />";
-				echo "Arguments sent to UPS";
+			if ( isset( $wpsc_ups_settings['upsenvironment'] ) ) {
+				echo '<strong>:: GetQuote ::DEBUG OUTPUT::</strong><br />';
+				echo 'Arguments sent to UPS';
 				print_r( $args );
-				echo "<hr />";
+				echo '<hr />';
 				print $request;
-				echo "<hr />";
-				echo "Response from UPS";
+				echo '<hr />';
+				echo 'Response from UPS';
 				echo $raw_quote;
-				echo "</strong>:: GetQuote ::End DEBUG OUTPUT::";
+				echo '</strong>:: GetQuote ::End DEBUG OUTPUT::';
 			}
 		}
-		//Avoid trying getting rates again and again when the stored zipcode is incorrect.
-		if( count( $rate_table ) == 0 )
-			wpsc_update_customer_meta( 'shipping_zip', '' );
+
 		$wpec_ash->cache_results(
 			$this->internal_name,
 			$rate_table,

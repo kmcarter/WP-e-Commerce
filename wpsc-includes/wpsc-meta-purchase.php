@@ -1,13 +1,4 @@
 <?php
-/*
-** NOTICE:
-** This file was automatically created, strongly suggest that it not be edited directly.
-** See the code in the file wpsc-meta-init.php near line 320 for more details.
-*/
-
-//
-// purchase meta functions
-//
 
 /**
  * Add meta data field to a purchase.
@@ -93,7 +84,7 @@ function wpsc_purchase_meta_exists( $purchase_id, $meta_key ) {
  * @param mixed $prev_value Optional. Previous value to check before removing.
  * @return bool False on failure, true if success.
  */
-function wpsc_update_purchase_meta( $_id, $meta_key, $meta_value, $prev_value = '' ) {
+function wpsc_update_purchase_meta( $purchase_id, $meta_key, $meta_value, $prev_value = '' ) {
 	return update_metadata( 'wpsc_purchase' , $purchase_id , $meta_key , $meta_value , $prev_value );
 }
 
@@ -157,11 +148,11 @@ function wpsc_get_purchase_custom_keys( $purchase_id = 0 ) {
  *
  * @since 3.8.14
  *
- * @param string $metakey Meta field key.
+ * @param string $key Meta field key.
  * @param int $purchase_id purchase ID
  * @return array Meta field values.
  */
-function wpsc_get_purchase_custom_values( $metakey = '', $purchase_id = 0 ) {
+function wpsc_get_purchase_custom_values( $key = '', $purchase_id = 0 ) {
 
 	if ( ! $key ) {
 		return null;

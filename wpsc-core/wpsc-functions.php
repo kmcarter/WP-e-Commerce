@@ -10,8 +10,9 @@
  * @since 3.8
  */
 
-if ( is_admin() )
+if ( is_admin() ) {
 	add_filter( 'term_name', 'wpsc_term_list_levels', 10, 2 );
+}
 
 /**
  * When doing variation and product category drag&drop sort, we want to restrict
@@ -31,16 +32,26 @@ if ( is_admin() )
  * @return string
  */
 function wpsc_term_list_levels( $term_name, $term ) {
+
 	global $wp_list_table, $wpsc_term_list_levels;
 
 	$screen = get_current_screen();
-	if ( ! is_object( $screen ) || ! in_array( $screen->id, array( 'edit-wpsc-variation', 'edit-wpsc_product_category' ) ) )
+
+	if ( ! is_object( $screen ) || ! in_array( $screen->id, array( 'edit-wpsc-variation', 'edit-wpsc_product_category' ) ) ) {
 		return $term_name;
+	}
 
-	if ( ! isset( $wpsc_term_list_levels ) )
+	if ( ! isset( $wpsc_term_list_levels ) ) {
 		$wpsc_term_list_levels = array();
+	}
 
-	$wpsc_term_list_levels[$term->term_id] = $wp_list_table->level;
+	if ( is_numeric( $term ) ) {
+		$term = get_term_by( 'id', $term, str_replace( 'edit-', '', $screen->id ) );
+	}
+
+	if ( isset( $wp_list_table->level ) ) {
+		$wpsc_term_list_levels[ $term->term_id ] = $wp_list_table->level;
+	}
 
 	return $term_name;
 }
@@ -70,53 +81,144 @@ function wpsc_print_term_list_levels_script() {
 /**
  * wpsc_core_load_checkout_data()
  *
- *
+ * @return none
  */
-
 function wpsc_core_load_checkout_data() {
+	wpsc_checkout_form_fields();
+	wpsc_checkout_unique_names();
+}
+
+/**
+ * Get the checkout form fields and types
+ *
+ * @since 3.8.14
+ *
+ * @return array of strings     each key value being a checkout item's
+ *                          	user presentable name, the value being the
+ *                              checkout item type
+ */
+function wpsc_checkout_form_fields() {
 	$form_types = array(
-		__( 'Text', 'wpsc' )             => 'text',
-		__( 'Email Address', 'wpsc' )    => 'email',
-		__( 'Street Address', 'wpsc' )   => 'address',
-		__( 'City', 'wpsc' )             => 'city',
-		__( 'Country', 'wpsc' )          => 'country',
-		__( 'Delivery Address', 'wpsc' ) => 'delivery_address',
-		__( 'Delivery City', 'wpsc' )    => 'delivery_city',
-		__( 'Delivery Country', 'wpsc' ) => 'delivery_country',
-		__( 'Text Area', 'wpsc' )        => 'textarea',
-		__( 'Heading', 'wpsc' )          => 'heading',
-		__( 'Select', 'wpsc' )           => 'select',
-		__( 'Radio Button', 'wpsc' )     => 'radio',
-		__( 'Checkbox', 'wpsc' )         => 'checkbox'
+			__( 'Text', 'wpsc' )             => 'text',
+			__( 'Email Address', 'wpsc' )    => 'email',
+			__( 'Street Address', 'wpsc' )   => 'address',
+			__( 'City', 'wpsc' )             => 'city',
+			__( 'Country', 'wpsc' )          => 'country',
+			__( 'Delivery Address', 'wpsc' ) => 'delivery_address',
+			__( 'Delivery City', 'wpsc' )    => 'delivery_city',
+			__( 'Delivery Country', 'wpsc' ) => 'delivery_country',
+			__( 'Text Area', 'wpsc' )        => 'textarea',
+			__( 'Heading', 'wpsc' )          => 'heading',
+			__( 'Select', 'wpsc' )           => 'select',
+			__( 'Radio Button', 'wpsc' )     => 'radio',
+			__( 'Checkbox', 'wpsc' )         => 'checkbox',
 	);
 
 	$form_types = apply_filters( 'wpsc_add_form_types', $form_types );
+
+	// TODO: there really isn't a good reason to save this as an option becuase it is recomputed
+	// every time WPEC is reloaded.  Deprecate the option and replace any references to the option
+	// with a call to this function
 	update_option( 'wpsc_checkout_form_fields', $form_types );
 
-	$unique_names = array(
-		'billingfirstname',
-		'billinglastname',
-		'billingaddress',
-		'billingcity',
-		'billingstate',
-		'billingcountry',
-		'billingemail',
-		'billingphone',
-		'billingpostcode',
-		'delivertoafriend' ,
-		'shippingfirstname' ,
-		'shippinglastname' ,
-		'shippingaddress' ,
-		'shippingcity' ,
-		'shippingstate' ,
-		'shippingcountry' ,
-		'shippingpostcode'
-	);
-
-	$unique_names = apply_filters( 'wpsc_add_unique_names' , $unique_names );
-	update_option( 'wpsc_checkout_unique_names', $unique_names );
-
+	return $form_types;
 }
+
+
+/**
+ * Get the unique names used in checkout forms
+ *
+ * @since 3.8.14
+ *
+ * @return array of strings, each string value being a checkout item's unique name
+ */
+function wpsc_checkout_unique_names() {
+
+	static $unique_names = null;
+
+	if ( empty( $unique_names ) ) {
+		$unique_names = array(
+				'billingfirstname',
+				'billinglastname',
+				'billingaddress',
+				'billingcity',
+				'billingstate',
+				'billingcountry',
+				'billingemail',
+				'billingphone',
+				'billingpostcode',
+				'billingregion',
+				'shippingSameBilling',
+				'shippingfirstname',
+				'shippinglastname',
+				'shippingaddress',
+				'shippingcity',
+				'shippingstate',
+				'shippingcountry',
+				'shippingpostcode',
+				'shippingregion',
+		);
+
+		$unique_names = apply_filters( 'wpsc_add_unique_names' , $unique_names );
+
+		// TODO: there really isn't a good reason to save this as an option becuase it is recomputed
+		// every time WPEC is reloaded.  Deprecate the option and replace any references to the option
+		// with a call to this function
+		update_option( 'wpsc_checkout_unique_names', $unique_names );
+	}
+
+	return $unique_names;
+}
+
+/**
+ * Get the unique names used in checkout forms
+ *
+ * @since 3.8.14
+ * @access private
+ *
+ * @return array  local variables to add to both admin and front end WPEC javascript
+ */
+function wpsc_javascript_localizations( $localizations = false ) {
+
+	if ( ! is_array( $localizations ) ) {
+		$localizations = array();
+	}
+
+	// The default localizations should only be added once per page as we don't want them to be
+	// defined more than once in the javascript.
+	static $already_added_default_localizations = false;
+
+	if ( ! $already_added_default_localizations ) {
+
+		$localizations['wpsc_ajax'] = array(
+			'ajaxurl'                 => admin_url( 'admin-ajax.php', 'relative' ),
+			'spinner'                 => esc_url( wpsc_get_ajax_spinner() ),
+			'no_quotes'               => __( 'It appears that there are no shipping quotes for the shipping information provided.  Please check the information and try again.', 'wpsc' ),
+			'ajax_get_cart_error'     => __( 'There was a problem getting the current contents of the shopping cart.', 'wpsc' ),
+			'slide_to_shipping_error' => true,
+		);
+
+		$localizations['base_url']  	 	       = site_url();
+		$localizations['WPSC_URL'] 	               = WPSC_URL;
+		$localizations['WPSC_IMAGE_URL']           = WPSC_IMAGE_URL;
+		$localizations['WPSC_CORE_IMAGES_URL']     = WPSC_CORE_IMAGES_URL;
+		$localizations['fileThickboxLoadingImage'] = WPSC_CORE_IMAGES_URL . '/loadingAnimation.gif';
+		$localizations['msg_shipping_need_recalc'] = __( 'Please click the <em>Calculate</em> button to refresh your shipping quotes, as your shipping information has been modified.', 'wpsc' );
+	}
+
+	/**
+	 * a filter for WPeC components, plugins and themes to alter or add to what is localized into the WPeC javascript.
+	 *
+	 * @since 3.8.14
+	 *
+	 * @access public
+	 *
+	 * @param array $localizations array of localizations being sent to the javascript
+	 *
+	 */
+	return apply_filters( 'wpsc_javascript_localizations', $localizations );
+}
+
 /**
  * wpsc_core_load_purchase_log_statuses()
  *
@@ -218,8 +320,6 @@ function wpsc_core_load_shipping_modules() {
 
 	$wpsc_shipping_modules = apply_filters( 'wpsc_shipping_modules', $wpsc_shipping_modules );
 
-	if ( ! get_option( 'do_not_use_shipping' ) )
-		add_action( 'wpsc_setup_customer', '_wpsc_action_get_shipping_method' );
 }
 
 /**
@@ -336,12 +436,13 @@ function wpsc_register_post_types() {
 	$labels = array(
 		'name'          => _x( 'Product Tags'        , 'taxonomy general name' , 'wpsc' ),
 		'singular_name' => _x( 'Product Tag'         , 'taxonomy singular name', 'wpsc' ),
-		'search_items'  => __( 'Product Search Tags' , 'wpsc' ),
+		'search_items'  => __( 'Search Product Tags' , 'wpsc' ),
 		'all_items'     => __( 'All Product Tags'    , 'wpsc' ),
 		'edit_item'     => __( 'Edit Tag'            , 'wpsc' ),
 		'update_item'   => __( 'Update Tag'          , 'wpsc' ),
-		'add_new_item'  => __( 'Add new Product Tag' , 'wpsc' ),
+		'add_new_item'  => __( 'Add New Product Tag' , 'wpsc' ),
 		'new_item_name' => __( 'New Product Tag Name', 'wpsc' ),
+		'choose_from_most_used' => __('Choose from most used Product Tags', 'wpsc' ),
 	);
 
 	$args = array(
@@ -447,21 +548,17 @@ function wpsc_serialize_shopping_cart() {
 	if ( is_admin() && ! ( defined( 'DOING_AJAX' ) && DOING_AJAX ) )
 		return;
 
-	// avoid flooding transients with bots hitting feeds
-	if ( is_feed() ) {
-		wpsc_delete_all_customer_meta();
-		return;
-	}
-
-	if ( is_object( $wpsc_cart ) )
+	if ( is_object( $wpsc_cart ) ) {
 		$wpsc_cart->errors = array();
+	}
 
 	// need to prevent set_cookie from being called at this stage in case the user just logged out
 	// because by now, some output must have been printed out
 	$customer_id = wpsc_get_current_customer_id();
 
-	if ( $customer_id )
-		wpsc_update_customer_meta( 'cart', base64_encode( serialize( $wpsc_cart ) ) );
+	if ( $customer_id ) {
+		wpsc_update_customer_cart( $wpsc_cart, $customer_id );
+	}
 
 	return true;
 }
@@ -491,10 +588,30 @@ function wpsc_get_page_post_names() {
 	return $wpsc_page;
 }
 
+
+/**
+ * wpsc_cron()
+ *
+ * Schedules wpsc worpress cron tasks
+ *
+ * @param none
+ * @return void
+ */
 function wpsc_cron() {
+	$default_schedules = array( 'hourly', 'twicedaily', 'daily');
+
+	/*
+	 * Create a cron event for each likely cron schedule.  The likely cron schedules
+	 * are the default WordPress cron intervals (hourly, twicedaily and daily are
+	 * defined in wordpress 3.5.1) and any cron schedules added by our plugin or
+	 * it's related plugins.  We recognize these by checking if the schedule
+	 * name is prefixed by 'wpsc_'.
+	 */
 	foreach ( wp_get_schedules() as $cron => $schedule ) {
-		if ( ! wp_next_scheduled( "wpsc_{$cron}_cron_task" ) )
-			wp_schedule_event( time(), $cron, "wpsc_{$cron}_cron_task" );
+		if ( in_array($cron, $default_schedules) || ( stripos($cron, 'wpsc_', 0) === 0 ) ) {
+			if ( ! wp_next_scheduled( "wpsc_{$cron}_cron_task" ) )
+				wp_schedule_event( time(), $cron, "wpsc_{$cron}_cron_task" );
+		}
 	}
 }
 add_action( 'init', 'wpsc_cron' );
@@ -595,3 +712,177 @@ function wpsc_core_load_page_titles() {
 		$wpsc_page_titles = wpsc_get_page_post_names();
 }
 
+/**
+ * get the global checkout object, will create it
+ *
+ * @return wpsc_checkout       the global checkout object
+ */
+function wpsc_core_get_checkout() {
+	global $wpsc_checkout;
+
+	if ( empty( $wpsc_checkout ) || ! is_a( $wpsc_checkout, 'wpsc_checkout' ) ) {
+		$wpsc_checkout = new wpsc_checkout();
+	}
+
+	$wpsc_checkout->rewind_checkout_items();
+
+	return $wpsc_checkout;
+
+}
+
+/**
+ * get the current WPeC database version
+ *
+ * @return int current database version
+ */
+function wpsc_core_get_db_version() {
+	return intval( get_option( 'wpsc_db_version', 0 ) );
+}
+
+/**
+ * get the current WPeC database version
+ *
+ * @return int current database version
+ */
+function wpsc_core_shipping_enabled() {
+	$shipping_disabled = get_option( 'do_not_use_shipping', -1 );
+
+	if ( $shipping_disabled === -1 ) {
+		// if shipping enabled comes back as -1 we want to set it to the default value, this is
+		// because unset WordPress options are not cached.  That means if this option isn't in the database
+		// we could make a trip to the database every time this option is looked at.  This variable
+		// can be tested many times per page view, so let's make it clean
+		update_option( 'do_not_use_shipping', false );
+		$shipping_disabled = false;
+	}
+
+	$shipping_disabled = _wpsc_make_value_into_bool( $shipping_disabled );
+
+	return ! $shipping_disabled;
+}
+
+/**
+ *  flush all WPeC temporary stored data
+ *
+ * WordPress generallay has two places it stores temporary data, the object cache and the transient store.  When
+ * an object cache is configured for WordPress transients are stored in the object cache.  When there isn't an
+ * object cache available transients are stored in the WordPress options table.  When clearing temporary data
+ * we need to consider both places.
+ *
+ * @since 3.8.14.1
+ *
+ */
+function wpsc_core_flush_temporary_data() {
+
+	//
+	/**
+	 * Tell the the rest of the WPeC world it's time to flush all cache data
+	 *
+	 * @since 3.8.14.1
+	 *
+	 * no params
+	 */
+	do_action( 'wpsc_core_flush_transients' );
+
+	$our_saved_transients = _wpsc_remembered_transients();
+
+	// strip off the WordPress transient prefix to get the transient name used when storing the transient, then delete it
+	foreach ( $our_saved_transients as $transient_name => $timestamp ) {
+		delete_transient( $transient_name );
+	}
+
+	/**
+	 * Tell the the rest of the WPeC world we have just flushed all temporary data,
+	 *
+	 * @since 3.8.14.1
+	 *
+	 * no params
+	 */
+	do_action( 'wpsc_core_flushed_transients' );
+}
+
+/**
+ * Rememeber whenever WPeC saves data in a transient
+ *
+ * @param string $transient
+ * @param varies|null $value
+ * @param int|null $expiration
+ * @return array[string]|false  names of transients saved, false when nothing has been stored
+ */
+function _wpsc_remembered_transients( $transient = '', $value = null, $expiration = null ) {
+	static $wpsc_transients = false;
+
+	if ( $wpsc_transients === false ) {
+
+		// get our saved transients
+		$wpsc_transients = get_option( __FUNCTION__,  false );
+
+		if ( $wpsc_transients === false ) {
+			// look at the database and see if there are WPeC transients in the options table.  Note that it is possible to track these,
+			// using WordPress hooks, but because we need to check for transients that are stored by prior releases of WPeC we go right
+			// at the database.
+			global $wpdb;
+
+			$wpsc_transients_from_db = $wpdb->get_col( 'SELECT option_name FROM ' . $wpdb->options . ' WHERE `option_name` LIKE "\_transient\_wpsc\_%"' );
+
+			$wpsc_transients = array();
+
+			// strip off the WordPress transient prefix to get the transient name used when storing the transient, then delete it
+			foreach ( $wpsc_transients_from_db as $index => $transient_name ) {
+				$transient_name = substr( $transient_name, strlen( '_transient_' ) );
+				$wpsc_transients[$transient_name] = time();
+			}
+
+			// we are all initialized, save our known transients list for later
+			update_option( __FUNCTION__, $wpsc_transients );
+		}
+	}
+
+	// if we are setting a transient, and it is one of ours, and we havn't seen it before, save the name
+	if ( ! empty ( $transient ) ) {
+		if ( strpos( $transient, 'wpsc_' ) === 0 ||  strpos( $transient, '_wpsc_' ) === 0 ) {
+			if ( ! isset( $wpsc_transients[$transient] ) ) {
+				$wpsc_transients[$transient] = time();
+				update_option( __FUNCTION__, $wpsc_transients );
+			}
+		}
+	}
+
+	return $wpsc_transients;
+}
+
+add_action( 'setted_transient', '_wpsc_remembered_transients' , 10, 3 );
+
+/**
+ * When we change versions, aggressively clear temporary data and WordPress cache.
+ *
+ * @since 3.8.14.1
+ *
+ * @access private
+ */
+function _wpsc_clear_wp_cache_on_version_change() {
+
+	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+		return;
+	}
+
+	$version_we_last_stored = get_option( __FUNCTION__, false );
+
+	if ( $version_we_last_stored != WPSC_VERSION ) {
+
+		// version changed, clear temporary data
+		wpsc_core_flush_temporary_data();
+
+		// version changed, flush the object cache
+		wp_cache_flush();
+
+		if ( false === $version_we_last_stored ) {
+			// first time through we create the autoload option, we will read it every time
+			add_option( __FUNCTION__, WPSC_VERSION, null, true );
+		} else {
+			update_option( __FUNCTION__, WPSC_VERSION );
+		}
+	}
+}
+
+add_action( 'admin_init', '_wpsc_clear_wp_cache_on_version_change', 1 );

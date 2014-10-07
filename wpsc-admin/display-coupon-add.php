@@ -1,9 +1,11 @@
-<div class="wrap" id+"coupon_data">
+<div class="wrap" id="coupon_data">
 	<div id="add_coupon_box">
 		<h2><?php _e( 'Add Coupon', 'wpsc' ); ?></h2>
 		<form name='add_coupon' method="post" action="<?php echo admin_url( 'edit.php?post_type=wpsc-product&page=wpsc-edit-coupons' ); ?>">
 			<table class="form-table">
 				<tbody>
+
+					<?php do_action( 'wpsc_coupon_add_top' ); ?>
 
 					<tr class="form-field">
 						<th scope="row" valign="top">
@@ -20,8 +22,8 @@
 							<label for="add-coupon-code"><?php _e( 'Discount', 'wpsc' ); ?></label>
 						</th>
 						<td>
-							<input name="add_discount" id="add-coupon-code" type="number" class="small-text" min="0" />
-							<span class="description"><?php _e( 'The discount amount', 'wpsc' ); ?></span>
+							<input name="add_discount" step=".01" id="add-coupon-code" type="number" class="small-text" min="0" style="width: 300px" />
+							<p class="description"><?php _e( 'The discount amount', 'wpsc' ); ?></p>
 						</td>
 					</tr>
 
@@ -117,6 +119,8 @@
 							</div>
 						</td>
 					</tr>
+
+					<?php do_action( 'wpsc_coupon_add_bottom' ); ?>
 
 				</tbody>
 			</table>

@@ -21,24 +21,24 @@ class Sputnik {
 	/**
 	 * Base URI for store URLs
 	 */
-	const SITE_BASE = 'http://getshopped.org';
+	const SITE_BASE = 'http://wpecommerce.org';
 
 	/**
 	 * Base URI for API URLs
 	 */
-	const API_BASE = 'http://getshopped.org/wpec';
+	const API_BASE = 'http://wpecommerce.org/wpec';
 
 	/**
 	 * OAuth client key
 	 */
-	const OAUTH_KEY = 'DPkGAydyeTYn';
+	const OAUTH_KEY = 'k7q3lu9LeOJc';
 
 	/**
 	 * OAuth client secret
 	 *
 	 * Not so secret any more.
 	 */
-	const OAUTH_SECRET = 'xoPbBx4fryLpu6QOQ1VSZ4vI06T1dhieVXPk8xbgUFRraYl1';
+	const OAUTH_SECRET = '8jjSVN54VFhraZttr8pDsCdnogqE22Sq299zTRdFDL2hEUIq';
 
 	/**
 	 * Path to Sputnik

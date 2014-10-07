@@ -44,15 +44,16 @@ function _wpsc_db_upgrade_2() {
 }
 
 function _wpsc_fix_UK_country_code() {
-	$country = new WPSC_Country( 'GB', 'isocode' );
-	$country->set( 'country', __( 'United Kingdom', 'wpsc' ) );
-	$country->save();
+	$country = new WPSC_Country( array(
+		'isocode' => 'GB',
+		'country', __( 'United Kingdom', 'wpsc' )
+	) );
 }
 
 function _wpsc_fix_guernsey_country_code() {
-	$country = new WPSC_Country( 'GF', 'isocode' );
-	$country->set( 'isocode', 'GG' );
-	$country->save();
+	$existing_wpsc_country = new WPSC_Country( 'GF' );
+	// replace the ISO country code in the existing country
+	$updated_wpsc_country = new WPSC_Country( array( 'id' => $existing_wpsc_country->get_id(), 'isocode' => 'GG', ) );
 }
 
 function _wpsc_new_country_serbia() {
@@ -65,7 +66,6 @@ function _wpsc_new_country_serbia() {
 		'continent' => 'europe',
 		'visible'   => '0',
 	) );
-	$country->save();
 }
 
 function _wpsc_new_country_montenegro() {
@@ -80,7 +80,6 @@ function _wpsc_new_country_montenegro() {
 		'continent'   => 'europe',
 		'visible'     => '0',
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_timor_leste_name() {
@@ -95,7 +94,6 @@ function _wpsc_fix_timor_leste_name() {
 		'continent'   => 'asiapacific',
 		'visible'     => '0',
 	) );
-	$country->save();
 }
 
 function _wpsc_new_country_aland_islands() {
@@ -110,7 +108,6 @@ function _wpsc_new_country_aland_islands() {
 		'continent'   => 'europe',
 		'visible'     => '0',
 	) );
-	$country->save();
 }
 
 function _wpsc_new_country_saint_barthelemy() {
@@ -125,7 +122,6 @@ function _wpsc_new_country_saint_barthelemy() {
 		'continent'   => 'europe',
 		'visible'     => '0',
 	) );
-	$country->save();
 }
 
 function _wpsc_new_country_bonaire_et_al() {
@@ -140,7 +136,6 @@ function _wpsc_new_country_bonaire_et_al() {
 		'continent'   => 'southamerica',
 		'visible'     => '0',
 	) );
-	$country->save();
 }
 
 function _wpsc_new_country_curacao() {
@@ -155,7 +150,6 @@ function _wpsc_new_country_curacao() {
 		'continent'   => 'southamerica',
 		'visible'     => '0',
 	) );
-	$country->save();
 }
 
 function _wpsc_new_country_saint_martin_french() {
@@ -170,7 +164,6 @@ function _wpsc_new_country_saint_martin_french() {
 		'continent'   => 'southamerica',
 		'visible'     => '0',
 	) );
-	$country->save();
 }
 
 function _wpsc_new_country_palestinian_territories() {
@@ -185,16 +178,14 @@ function _wpsc_new_country_palestinian_territories() {
 		'continent'   => 'asiapacific',
 		'visible'     => '0',
 	) );
-	$country->save();
 }
 
 function _wpsc_update_israeli_new_shekel_symbol() {
-	$country = new WPSC_Country( 'IL', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'     => 'IL',
 		'symbol'      => __( '₪', 'wpsc' ),
 		'symbol_html' => __( '&#8362;', 'wpsc' ),
 	) );
-	$country->save();
 }
 
 function _wpsc_new_country_sint_maarten_dutch() {
@@ -209,7 +200,6 @@ function _wpsc_new_country_sint_maarten_dutch() {
 		'continent'   => 'southamerica',
 		'visible'     => '0',
 	) );
-	$country->save();
 }
 
 function _wpsc_new_country_french_guiana() {
@@ -224,226 +214,217 @@ function _wpsc_new_country_french_guiana() {
 		'continent'   => 'southamerica',
 		'visible'     => '0',
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_netherlands_antille() {
-	$country = new WPSC_Country( 'AN', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'     => 'AN',
 		'symbol'      => __( 'ƒ', 'wpsc' ),
 		'symbol_html' => __( '&#402;', 'wpsc' ),
 		'continent'   => 'southamerica',
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_angola_kwanza() {
-	$country = new WPSC_Country( 'AO', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'     => 'AO',
 		'code'        => 'AOA',
 		'currency'    => __( 'Angolan Kwanza', 'wpsc' ),
 		'symbol'      => __( 'Kz', 'wpsc' ),
 		'symbol_html' => __( 'Kz', 'wpsc' ),
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_aruban_florin() {
-	$country = new WPSC_Country( 'AW', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'     => 'AW',
 		'currency'    => __( 'Aruban Florin', 'wpsc' ),
 		'symbol'      => __( 'Afl.', 'wpsc' ),
 		'symbol_html' => __( 'Afl.', 'wpsc' ),
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_azerbaijani_manat() {
-	$country = new WPSC_Country( 'AZ', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'     => 'AZ',
 		'currency'    => __('Azerbaijani Manat', 'wpsc'),
 		'code'        => 'AZN',
 		'symbol'      => _x( 'm', 'azerbaijani manat symbol', 'wpsc' ),
 		'symbol_html' => _x( 'm', 'azerbaijani manat symbol html', 'wpsc' ),
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_cyprus_currency() {
-	$country = new WPSC_Country( 'CY', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'     => 'CY',
 		'currency'    => __( 'Euro', 'wpsc' ),
 		'symbol'      => __( '€', 'wpsc' ),
 		'symbol_html' => __( '&#8364;', 'wpsc' ),
 		'code'        => __( 'EUR', 'wpsc' ),
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_republic_of_the_congo() {
-	$country = new WPSC_Country( 'CG', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode' => 'CG',
 		'country' => __( 'Republic of the Congo', 'wpsc' ),
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_currency_el_salvador() {
-	$country = new WPSC_Country( 'SV', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'     => 'SV',
 		'currency'    => __( 'US Dollar', 'wpsc' ),
 		'symbol'      => __( '$', 'wpsc' ),
 		'symbol_html' => __( '&#036', 'wpsc' ),
 		'code'        => 'USD',
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_ghanaian_currency_code() {
-	$country = new WPSC_Country( 'GH', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode' => 'GH',
 		'code' => 'GHS',
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_guatemala_currency() {
-	$country = new WPSC_Country( 'GT', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode' => 'GT',
 		'code' => 'GTQ',
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_guinea_bissau_currency() {
-	$country = new WPSC_Country( 'GW', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'  => 'GW',
 		'currency' => __( 'CFA Franc BEAC', 'wpsc' ),
 		'code'     => __('XAF', 'wpsc'),
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_madagascar_currency() {
-	$country = new WPSC_Country( 'MG', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'  => 'MG',
 		'currency' => __( 'Malagasy Ariary', 'wpsc' ),
 		'code'     => __( 'MGA', 'wpsc' ),
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_malta_currency() {
-	$country = new WPSC_Country( 'MT', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'     => 'MT',
 		'currency'    => __( 'Euro', 'wpsc' ),
 		'symbol'      => __( '€', 'wpsc' ),
 		'symbol_html' => __( '&#8364;', 'wpsc' ),
 		'code'        => __( 'EUR', 'wpsc' ),
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_mozambique_currency() {
-	$country = new WPSC_Country( 'MZ', 'isocode' );
-	$country->set( 'code', __( 'MZN', 'wpsc' ) );
-	$country->save();
+	$country = new WPSC_Country( array(
+		'isocode' => 'MZ',
+		'code'    => __( 'MZN', 'wpsc' )
+	) );
 }
 
 function _wpsc_fix_nicaragua_currency() {
-	$country = new WPSC_Country( 'NI', 'isocode' );
-	$country->set( 'code', __( 'NIO', 'wpsc' ) );
-	$country->save();
+	$country = new WPSC_Country( array(
+		'isocode' => 'NI',
+		'code'    => __( 'NIO', 'wpsc' )
+	) );
 }
 
 function _wpsc_fix_romania_currency() {
-	$country = new WPSC_Country( 'RO', 'isocode' );
-	$country->set( 'currency', __( 'Romanian New Leu', 'wpsc' ) );
-	$country->save();
+	$country = new WPSC_Country( array(
+		'isocode' => 'RO',
+		'currency' => __( 'Romanian New Leu', 'wpsc' )
+	) );
 }
 
 function _wpsc_fix_san_marino_currency() {
-	$country = new WPSC_Country( 'SM', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'     => 'SM',
 		'currency'    => __( 'Euro', 'wpsc' ),
 		'symbol'      => __( '€', 'wpsc' ),
 		'symbol_html' => __( '&#8364;', 'wpsc' ),
 		'code'        => __( 'EUR', 'wpsc' ),
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_somalia_currency() {
-	$country = new WPSC_Country( 'SO', 'isocode' );
-	$country->set( 'code', __( 'SOS', 'wpsc' ) );
-	$country->save();
+	$country = new WPSC_Country( array(
+		'isocode' => 'SO',
+		'code'    => __( 'SOS', 'wpsc' )
+	) );
 }
 
 function _wpsc_fix_suriname_currency() {
-	$country = new WPSC_Country( 'SR', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode' => 'SR',
 		'currency' => __( 'Surinamese Dollar', 'wpsc' ),
 		'code' => __( 'SRD', 'wpsc' ),
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_taiwan_currency() {
-	$country = new WPSC_Country( 'TW', 'isocode' );
-	$country->set( 'currency', __( 'New Taiwanese Dollar', 'wpsc' ) );
-	$country->save();
+	$country = new WPSC_Country( array(
+		'isocode' => 'TW',
+		'currency' => __( 'New Taiwanese Dollar', 'wpsc' )
+	) );
 }
 
 function _wpsc_fix_tajikistan_currency() {
-	$country = new WPSC_Country( 'TJ', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'  => 'TJ',
 		'currency' => __( 'Tajikistan Somoni', 'wpsc' ),
 		'code'     => __( 'TJS', 'wpsc' ),
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_tunisia_currency() {
-	$country = new WPSC_Country( 'TN', 'isocode' );
-	$country->set( 'currency', __( 'Tunisian Dollar', 'wpsc' ) );
-	$country->save();
+	$country = new WPSC_Country( array(
+		'isocode'  => 'TN',
+		'currency' => __( 'Tunisian Dollar', 'wpsc' )
+	) );
 }
 
 function _wpsc_fix_turkey_currency() {
-	$country = new WPSC_Country( 'TR', 'isocode' );
-	$country->set( 'code', __( 'TRY', 'wpsc' ) );
-	$country->save();
+	$country = new WPSC_Country( array(
+		'isocode' => 'TR',
+		'code'    => __( 'TRY', 'wpsc' )
+	) );
 }
 
 function _wpsc_fix_uganda_currency() {
-	$country = new WPSC_Country( 'UG', 'isocode' );
-	$country->set( 'code', __( 'UGX', 'wpsc' ) );
-	$country->save();
+	$country = new WPSC_Country( array(
+		'isocode' => 'UG',
+		'code'    => __( 'UGX', 'wpsc' )
+	) );
 }
 
 function _wpsc_fix_uruguay_currency() {
-	$country = new WPSC_Country( 'UY', 'isocode' );
-	$country->set( 'code', __( 'UYU', 'wpsc' ) );
-	$country->save();
+	$country = new WPSC_Country( array(
+		'isocode' => 'UY',
+		'code'    => __( 'UYU', 'wpsc' )
+	) );
 }
 
 function _wpsc_fix_venezuela_currency() {
-	$country = new WPSC_Country( 'VE', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'  => 'VE',
 		'currency' => __( 'Venezuelan Bolivar Fuerte', 'wpsc' ),
 		'code'     => __( 'VEF', 'wpsc' ),
 	) );
-	$country->save();
 }
 
 function _wpsc_fix_zimbabwe_currency() {
-	$country = new WPSC_Country( 'ZW', 'isocode' );
-	$country->set( array(
+	$country = new WPSC_Country( array(
+		'isocode'     => 'ZW',
 		'currency'    => __( 'US Dollar', 'wpsc' ),
 		'symbol'      => __( '$', 'wpsc' ),
 		'symbol_html' => __( '&#036', 'wpsc' ),
 		'code'        => 'USD',
 		'continent'   => 'asiapacific',
 	) );
-	$country->save();
 }

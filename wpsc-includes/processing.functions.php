@@ -6,7 +6,7 @@
  * @access public
  * @param mixed $price_in
  * @param mixed $args
- * @return void
+ * @return string
  */
 function wpsc_currency_display( $price_in, $args = null ) {
 	global $wpdb;
@@ -32,27 +32,30 @@ function wpsc_currency_display( $price_in, $args = null ) {
 	// Format the price for output
 	$price_out = wpsc_format_number( $price_in, $decimals );
 
-	if ( ! $query['isocode'] ) {
-		// Get currency settings
-		$currency_type = get_option( 'currency_type' );
+	// Get currency settings
+	$currency_type = get_option( 'currency_type' );
 
+	if ( ! $query['isocode'] ) {
+		// @todo: can deprecate this caching because the WPSC_Countries class already caches the data
 		if ( ! $wpsc_currency_data = wp_cache_get( $currency_type, 'wpsc_currency_id' ) ) {
-			$wpsc_currency_data = $wpdb->get_row( $wpdb->prepare( "SELECT `symbol`, `symbol_html`, `code` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `id` = %d LIMIT 1", $currency_type ), ARRAY_A );
+			$wpsc_currency_data = WPSC_Countries::get_currency_data( $currency_type, true );
 			wp_cache_set( $currency_type, $wpsc_currency_data, 'wpsc_currency_id' );
 		}
 	} elseif ( ! $wpsc_currency_data = wp_cache_get( $query['isocode'], 'wpsc_currency_isocode' ) ) {
-		$wpsc_currency_data = $wpdb->get_row( $wpdb->prepare( "SELECT `symbol`, `symbol_html`, `code` FROM `" . WPSC_TABLE_CURRENCY_LIST . "` WHERE `isocode` = %s LIMIT 1", $query['isocode'] ), ARRAY_A );
+		$wpsc_currency_data = WPSC_Countries::get_currency_data( $currency_type, true );
 		wp_cache_set( $query['isocode'], $wpsc_currency_data, 'wpsc_currency_isocode' );
 	}
 
 	// Figure out the currency code
-	if ( $query['display_currency_code'] )
+	if ( $query['display_currency_code'] ) {
 		$currency_code = $wpsc_currency_data['code'];
+	}
 
 	// Figure out the currency sign
 	$currency_sign = '';
+
 	if ( $query['display_currency_symbol'] ) {
-		if ( !empty( $wpsc_currency_data['symbol'] ) ) {
+		if ( ! empty( $wpsc_currency_data['symbol'] ) ) {
 			if ( $query['display_as_html'] && !empty($wpsc_currency_data['symbol_html']) ) {
 				$currency_sign = $wpsc_currency_data['symbol_html'];
 			} else {
@@ -108,8 +111,9 @@ function wpsc_currency_display( $price_in, $args = null ) {
 function wpsc_decrement_claimed_stock($purchase_log_id) {
 	global $wpdb;
 
-	//processed
-	$all_claimed_stock = $wpdb->get_results( $wpdb->prepare( "SELECT `cs`.`product_id`, `cs`.`stock_claimed`, `pl`.`id`, `pl`.`processed` FROM `" . WPSC_TABLE_CLAIMED_STOCK . "` `cs` JOIN `" . WPSC_TABLE_PURCHASE_LOGS . "` `pl` ON `cs`.`cart_id` = `pl`.`id` WHERE `cs`.`cart_id` = '%s'", $purchase_log_id ) );
+	// Processed
+	$claimed_query = new WPSC_Claimed_Stock( array( 'cart_id' => $purchase_log_id ) );
+	$all_claimed_stock = $claimed_query->get_purchase_log_claimed_stock();
 
 	if( !empty( $all_claimed_stock ) ){
 		switch($all_claimed_stock[0]->processed){
@@ -151,7 +155,8 @@ function wpsc_decrement_claimed_stock($purchase_log_id) {
 					}
 				}
 			case 6:
-				$wpdb->query( $wpdb->prepare( "DELETE FROM `".WPSC_TABLE_CLAIMED_STOCK."` WHERE `cart_id` IN (%s)", $purchase_log_id ) );
+				$claimed_query = new WPSC_Claimed_Stock( array( 'cart_id' => $purchase_log_id ) );
+				$claimed_query->clear_claimed_stock( 0 );
 				break;
 		}
 	}
@@ -163,9 +168,8 @@ function wpsc_decrement_claimed_stock($purchase_log_id) {
  *  @return returns the currency symbol used for the shop
 */
 function wpsc_get_currency_symbol(){
-	global $wpdb;
-	$currency_type = get_option('currency_type');
-	$wpsc_currency_data = $wpdb->get_var( $wpdb->prepare( "SELECT `symbol` FROM `".WPSC_TABLE_CURRENCY_LIST."` WHERE `id` = %d LIMIT 1", $currency_type ) );
+	$currency_type = get_option( 'currency_type' );
+	$wpsc_currency_data = WPSC_Countries::get_currency_symbol( $currency_type );
 	return $wpsc_currency_data;
 }
 
@@ -391,8 +395,9 @@ function wpsc_check_weight($state, $product) {
 	if( array_search( 'usps', $custom_shipping ) !== false )
 		$shipping_modules[] = 'Weight Rate';
 
-	if( empty( $product_meta['no_shipping'] ) && !empty( $shipping_modules ) ) {
-		if( $product_meta['weight'] == 0 ) // otherwise, use the weight from the products list table
+	if ( empty( $product_meta['no_shipping'] ) && !empty( $shipping_modules ) ) {
+
+		if ( ! isset( $product_meta['weight'] ) || ( isset( $product_meta['weight'] ) && $product_meta['weight'] == 0 ) ) // otherwise, use the weight from the products list table
 			$has_no_weight = true;
 
 		if( $has_no_weight === true ) {

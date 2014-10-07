@@ -304,7 +304,7 @@ function wpsc_next_products_link( $text = 'Next', $show_disabled = false ) {
  */
 function wpsc_previous_products_link( $text = 'Previous', $show_disabled = false ) {
 	_wpsc_deprecated_function( __FUNCTION__, '3.8', 'wpsc_pagination');
-	return false;;
+	return false;
 }
 
 /**
@@ -1768,7 +1768,329 @@ function wpsc_the_featured_image_fix( $stuff, $post_ID ){
 			$stuff = '<img src="' . esc_url( $header_image ) . '" width="' . HEADER_IMAGE_WIDTH . '" height="' . HEADER_IMAGE_HEIGHT . '" alt="" />';
 	}
 
-	remove_action('post_thumbnail_html','wpsc_the_featured_image_fix');
+	remove_action( 'post_thumbnail_html', 'wpsc_the_featured_image_fix' );
 
 	return $stuff;
 }
+
+/**
+ * @access public
+ * @param string $meta_object_type Type of object metadata is for (e.g., variation. cart, etc)
+ * @return string Name of the custom meta table defined in $wpdb, or the name as it would be defined
+ * @deprecated since 3.8.13.4
+ */
+function wpsc_meta_table_name( $meta_object_type ) {
+	_wpsc_deprecated_function( __FUNCTION__, '3.8.14', '_wpsc_meta_table_name' );
+	return _wpsc_meta_table_name( $meta_object_type );
+}
+
+/**
+ * Google checkout not longer available or supported, so we are deprecating this function
+ *
+ * @access public
+
+ * @deprecated since 3.8.14
+ */
+function wpsc_google_checkout(){
+	$currpage = wpsc_selfURL();
+	if (array_search("google",(array)get_option('custom_gateway_options')) !== false && $currpage != get_option('shopping_cart_url')) {
+		global $nzshpcrt_gateways;
+		foreach($nzshpcrt_gateways as $gateway) {
+			if($gateway['internalname'] == 'google' ) {
+				$gateway_used = $gateway['internalname'];
+				$gateway['function'](true);
+			}
+		}
+	}
+}
+
+/**
+ * Google checkout not longer available or supported, so we are deprecating this function
+ *
+ * @access public
+ * @deprecated since 3.8.14
+ */
+function wpsc_empty_google_logs(){
+	global $wpdb;
+	_wpsc_deprecated_function( __FUNCTION__, '3.8.14', 'wpsc_empty_google_logs' );
+	$sql = $wpdb->prepare( "DELETE FROM  `".WPSC_TABLE_PURCHASE_LOGS."` WHERE `sessionid` = '%s'", wpsc_get_customer_meta( 'checkout_session_id' ) );
+	$wpdb->query( $sql );
+	wpsc_delete_customer_meta( 'checkout_session_id' );
+}
+
+/**
+ * @access public
+ * @deprecated since 3.8.13.4
+ */
+function wpsc_user_dynamic_js() {
+	_wpsc_deprecated_function( __FUNCTION__, '3.8.14', 'wpsc_javascript_localizations' );
+}
+
+/*
+ * Over time certain javascript variables that were once localized into scripts will become obsolete
+ * When they do moving them here will continue to create the variables for older javascript to use.
+ */
+function _wpsc_deprecated_javascript_localization_vars() {
+
+	/**
+	 * @deprecated since 3.8.14
+	 *
+	 * wpsc_deprecated_vars as an object with the properties below has been replaced and each of the properties
+	 * is available as it's own variable, that means devs instead of referencing "wpsc_ajax.base_url" do
+	 * "base_url"
+	 */
+
+	$wpsc_deprecated_js_vars = array();
+
+	$wpsc_deprecated_js_vars['WPSC_DIR_NAME'] 			= WPSC_DIR_NAME;
+	$wpsc_deprecated_js_vars['fileLoadingImage'] 		= WPSC_CORE_IMAGES_URL . '/loading.gif';
+	$wpsc_deprecated_js_vars['fileBottomNavCloseImage'] = WPSC_CORE_IMAGES_URL . '/closelabel.gif';
+	$wpsc_deprecated_js_vars['resizeSpeed'] 			= 9;  // controls the speed of the image resizing (1=slowest and 10=fastest)
+	$wpsc_deprecated_js_vars['borderSize'] 				= 10; //if you adjust the padding in the CSS, you will need to update this variable
+
+	return $wpsc_deprecated_js_vars;
+}
+
+/**
+ * wpsc google checkout submit used for google checkout (unsure whether necessary in 3.8)
+ * @access public
+ *
+ * @deprecated since 3.8.14
+ */
+function wpsc_google_checkout_submit() {
+
+	_wpsc_deprecated_function( __FUNCTION__, '3.8.14' );
+
+	global $wpdb, $wpsc_cart, $current_user;
+	$wpsc_checkout = new wpsc_checkout();
+	$purchase_log_id = $wpdb->get_var( "SELECT `id` FROM `" . WPSC_TABLE_PURCHASE_LOGS . "` WHERE `sessionid` IN(%s) LIMIT 1", wpsc_get_customer_meta( 'checkout_session_id' ) );
+	get_currentuserinfo();
+	if ( $current_user->display_name != '' ) {
+		foreach ( $wpsc_checkout->checkout_items as $checkoutfield ) {
+			if ( $checkoutfield->unique_name == 'billingfirstname' ) {
+				$checkoutfield->value = $current_user->display_name;
+			}
+		}
+	}
+	if ( $current_user->user_email != '' ) {
+		foreach ( $wpsc_checkout->checkout_items as $checkoutfield ) {
+			if ( $checkoutfield->unique_name == 'billingemail' ) {
+				$checkoutfield->value = $current_user->user_email;
+			}
+		}
+	}
+
+	$wpsc_checkout->save_forms_to_db( $purchase_log_id );
+	$wpsc_cart->save_to_db( $purchase_log_id );
+	$wpsc_cart->submit_stock_claims( $purchase_log_id );
+}
+
+/**
+ *
+ * @deprecated 3.8.14
+ * @uses apply_filters()      Allows manipulation of the flash upload params.
+ */
+function wpsc_admin_dynamic_css() {
+
+	_wpsc_deprecated_function( __FUNCTION__, '3.8.14' );
+
+	header( 'Content-Type: text/css' );
+	header( 'Expires: ' . gmdate( 'r', mktime( 0, 0, 0, date( 'm' ), ( date( 'd' ) + 12 ), date( 'Y' ) ) ) . '' );
+	header( 'Cache-Control: public, must-revalidate, max-age=86400' );
+	header( 'Pragma: public' );
+	$flash = 0;
+	$flash = apply_filters( 'flash_uploader', $flash );
+
+	if ( 1 == $flash ) {
+?>
+		div.flash-image-uploader {
+			display: block;
+		}
+
+		div.browser-image-uploader {
+			display: none;
+		}
+<?php
+	} else {
+?>
+		div.flash-image-uploader {
+			display: none;
+		}
+
+		div.browser-image-uploader {
+			display: block;
+		}
+<?php
+	}
+	exit();
+}
+
+/**
+ * everywhere else in the code we use "wpsc_ajax_action", not the plural, deprecate this version
+ * @deprecated 3.8.14
+ *
+ */
+if ( isset( $_REQUEST['wpsc_ajax_actions'] ) && 'update_location' == $_REQUEST['wpsc_ajax_actions'] ) {
+	_wpsc_deprecated_function( 'wpsc_ajax_actions', '3.8.14', 'wpsc_ajax_action' );
+	add_action( 'init', 'wpsc_update_location' );
+}
+
+if ( isset( $_REQUEST['wpsc_ajax_actions'] ) && 'update_location' == $_REQUEST['wpsc_ajax_actions'] ) {
+	_wpsc_doing_it_wrong( 'wpsc_ajax_actions', __( 'wpsc_ajax_actions is not the proper parameter to pass AJAX handlers to WPeC.  Use wpsc_ajax_action instead.', 'wpsc' ) );
+	add_action( 'init', 'wpsc_update_location' );
+}
+
+/**
+ * Update products page URL options when permalink scheme changes.
+ *
+ * @since  3.8.9
+ * @access private
+ *
+ * @uses wpsc_update_page_urls() Gets the premalinks for product pages and stores for quick reference
+ */
+function _wpsc_action_permalink_structure_changed() {
+	_wpsc_deprecated_function( __FUNCTION__, '3.8.14' );
+
+	add_action( 'admin_notices', 'wpsc_check_permalink_notice' );
+
+	wpsc_update_page_urls( true );
+}
+
+/**
+ * Display warning if the user is using WordPress prior to 3.3 because there is a bug with custom
+ * post type and taxonomy permalink generation.
+ *
+ * @since 3.8.9
+ * @access private
+ */
+function _wpsc_display_permalink_refresh_notice() {
+	_wpsc_deprecated_function( __FUNCTION__, '3.8.14' );
+	?>
+	<div id="notice" class="error fade">
+		<p>
+			<?php printf( __( 'Due to <a href="%1$s">a bug in WordPress prior to version 3.3</a>, you might run into 404 errors when viewing your products. To work around this, <a href="%2$s">upgrade to WordPress 3.3 or later</a>, or simply click "Save Changes" below a second time.' , 'wpsc' ), 'http://core.trac.wordpress.org/ticket/16736', 'http://codex.wordpress.org/Updating_WordPress' ); ?>
+		</p>
+	</div>
+	<?php
+}
+
+/* These deprecated functions were quite horribly named, begging for namespace colliding. */
+if ( ! function_exists( 'change_context' ) )  {
+	/**
+	 * Adding function to change text for media buttons
+	 */
+	function change_context( $context ) {
+		_wpsc_deprecated_function( __FUNCTION__, '3.8.14' );
+
+		$current_screen = get_current_screen();
+
+		if ( $current_screen->id != 'wpsc-product' )
+			return $context;
+		return __( 'Upload Image%s', 'wpsc' );
+
+	}
+}
+
+if ( ! function_exists( 'change_link' ) ) {
+	function change_link( $link ) {
+		_wpsc_deprecated_function( __FUNCTION__, '3.8.14' );
+
+		global $post_ID;
+		$current_screen = get_current_screen();
+		if ( $current_screen && $current_screen->id != 'wpsc-product' )
+			return $link;
+
+		$uploading_iframe_ID = $post_ID;
+		$media_upload_iframe_src = "media-upload.php?post_id=$uploading_iframe_ID";
+
+		return $media_upload_iframe_src . "&amp;type=image&parent_page=wpsc-edit-products";
+	}
+}
+
+function wpsc_google_shipping_settings() {
+	_wpsc_deprecated_function( __FUNCTION__, '3.8.14' );
+	if ( isset( $_POST['submit'] ) ) {
+		foreach ( (array)$_POST['google_shipping'] as $key => $country ) {
+			if ( $country == 'on' ) {
+				$google_shipping_country[] = $key;
+				$updated++;
+			}
+		}
+		update_option( 'google_shipping_country', $google_shipping_country );
+		$sendback = wp_get_referer();
+		$sendback = remove_query_arg( 'googlecheckoutshipping', $sendback );
+
+		if ( isset( $updated ) ) {
+			$sendback = add_query_arg( 'updated', $updated, $sendback );
+		}
+
+		wp_redirect( $sendback );
+		exit();
+	}
+}
+
+if ( isset( $_REQUEST['wpsc_admin_action'] ) && ($_REQUEST['wpsc_admin_action'] == 'google_shipping_settings') ) {
+	add_action( 'admin_init', 'wpsc_google_shipping_settings' );
+}
+
+function wpsc_css_header() {
+	_wpsc_deprecated_function( __FUNCTION__, '3.8.14' );
+}
+
+/**
+ * deprecating item filters from wpsc_display_form_fields() in release 3.8.13.4
+ *
+ *  @deprecated 3.8.14
+ *
+ * This function displays each of the form fields.
+ *
+ * Each of them are filterable via 'wpsc_account_form_field_$tag'
+ * where tag is permalink-styled name or uniquename. i.e. First Name under Shipping would be
+ * 'wpsc_account_form_field_shippingfirstname' - while Your Billing Details would be filtered
+ * via 'wpsc_account_form_field_your-billing-details'.
+ *
+ * @param varies  $meta_value
+ * @param string  $meta_key
+ *
+ */
+function wpsc_user_log_deprecated_filter_values( $meta_value, $meta_key ) {
+	$filter = 'wpsc_account_form_field_' . $meta_key;
+	if ( has_filter( $filter ) ) {
+		$meta_value = apply_filters( $filter , esc_html( $meta_value ) );
+		_wpsc_doing_it_wrong( $filter, __( 'The filter being used has been deprecated. Use wpsc_get_visitor_meta or wpsc_get_visitor_meta_$neta_name instead.' ), '3.8.14' );
+	}
+
+	return $meta_value;
+}
+add_filter( 'wpsc_get_visitor_meta', 'wpsc_user_log_deprecated_filter_values', 10, 2 );
+
+/**
+ * deprecating user log filter for getting all customer meta as an array.
+ *
+ *@deprecated 3.8.14
+ *
+ * @return none
+ */
+function wpsc_deprecated_filter_user_log_get() {
+	if ( has_filter( 'wpsc_user_log_get' ) ) {
+		$meta_data = wpsc_get_customer_meta( 'checkout_details' );
+		$meta_data = apply_filters( 'wpsc_user_log_get', $meta_data, wpsc_get_current_customer_id() );
+		wpsc_update_customer_meta( 'checkout_details', $meta_data );
+		_wpsc_doing_it_wrong( 'wpsc_user_log_get', __( 'The filter being used has been deprecated. Use wpsc_get_visitor_meta or wpsc_get_visitor_meta_$neta_name instead.' ), '3.8.14' );
+	}
+}
+add_action( 'wpsc_start_display_user_log_form_fields', 'wpsc_deprecated_filter_user_log_get', 10, 0 );
+
+
+/**
+ * function to privide deprecated variables to older shipping modules
+ *
+ * @since 3.8.14
+ */
+function wpsc_deprecated_vars_for_shipping( $wpsc_cart ) {
+	// extracted from the insticnt fedex module
+	$_POST['country'] = wpsc_get_customer_meta( 'shippingcountry' );
+	$_POST['region']  = wpsc_get_customer_meta( 'shippingregion' );
+	$_POST['zipcode'] = wpsc_get_customer_meta( 'shippingpostcode' );
+}
+add_action( 'wpsc_before_get_shipping_method', 'wpsc_deprecated_vars_for_shipping' );

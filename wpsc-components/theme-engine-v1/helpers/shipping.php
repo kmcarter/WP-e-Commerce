@@ -97,43 +97,63 @@ function wpsc_shipping_quote_selected_state() {
    global $wpsc_cart;
    if(($wpsc_cart->selected_shipping_method == $wpsc_cart->shipping_method) && ($wpsc_cart->selected_shipping_option == $wpsc_cart->shipping_quote['name']) ) {
 	  $wpsc_cart->selected_shipping_amount = $wpsc_cart->base_shipping;
-      return "checked='checked'";
+	  return "checked='checked'";
    } else {
-      return "";
+	  return "";
    }
 }
-function wpsc_have_morethanone_shipping_quote(){
-   global $wpsc_cart, $wpsc_shipping_modules;
 
-    // if it's fixed rate shipping, and all the prices are the same, then there aren't really options.
-    if ( count($wpsc_cart->shipping_methods) == 1 && $wpsc_cart->shipping_methods[0] == 'flatrate' ) {
-        $last_price = false;
-        $first_quote_name = false;
+/**
+ * Is there more than one quote option for the user to choose from
+ *
+ * @access public
+ *
+ * @return boolean
+ */
+function wpsc_have_morethanone_shipping_quote(){
+	global $wpsc_cart, $wpsc_shipping_modules;
+
+	$wpsc_cart->get_shipping_method();
+
+	// if it's fixed rate shipping, and all the prices are the same, then there aren't really options.
+	if ( count( $wpsc_cart->shipping_methods ) == 1 && $wpsc_cart->shipping_methods[0] == 'flatrate' ) {
+		$last_price       = false;
+		$first_quote_name = false;
 
 		$quotes = $wpsc_shipping_modules['flatrate']->getQuote();
-		if ( empty( $quotes ) )
+
+		if ( empty( $quotes ) ) {
 			return false;
+		}
 
-        foreach ((array)$quotes as $name => $quote) {
-            if (!$first_quote_name) $first_quote_name = $name;
-            if ($last_price !== false && $quote != $last_price) return true;
-            $last_price = $quote;
-        }
-        $wpsc_cart->rewind_shipping_methods();
+		foreach ( (array) $quotes as $name => $quote ) {
+			if ( ! $first_quote_name ) {
+				$first_quote_name = $name;
+			}
 
-        $wpsc_cart->update_shipping('flatrate', $name);
-        return false;
-    }
-    return true;
+			if ( $last_price !== false && $quote != $last_price ) {
+				return true;
+			}
+
+			$last_price = $quote;
+		}
+
+		$wpsc_cart->rewind_shipping_methods();
+
+		$wpsc_cart->update_shipping( 'flatrate', $name );
+		return false;
+	}
+
+	return count( $wpsc_cart->shipping_quotes ) > 1;
 }
 
-function wpsc_have_morethanone_shipping_methods_and_quotes(){
+function wpsc_have_morethanone_shipping_methods_and_quotes() {
    global $wpsc_cart;
 
    if(count($wpsc_cart->shipping_quotes) > 1 || count($wpsc_cart->shipping_methods) > 1 || count($wpsc_cart->shipping_quotes) == $wpsc_cart->shipping_quote_count){
-      return true;
+	 return true;
    }else{
-      return false;
+	 return false;
    }
 }
 /**
@@ -141,10 +161,15 @@ function wpsc_have_morethanone_shipping_methods_and_quotes(){
  *
  * @return bool
  */
-function wpsc_have_shipping_quote(){
-   global $wpsc_cart;
-   if ($wpsc_cart->shipping_quote_count > 0 || count($wpsc_cart->shipping_quotes) > 0) {
-      return true;
-   }
-   return false;
+function wpsc_have_shipping_quote() {
+
+	$has_quote = false;
+
+	global $wpsc_cart;
+
+	if ( $wpsc_cart->shipping_quote_count > 0 || count( $wpsc_cart->shipping_quotes ) > 0 ) {
+		$has_quote = true;
+	}
+
+	return $has_quote;
 }

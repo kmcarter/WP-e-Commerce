@@ -1,25 +1,5 @@
 <?php
 
-function wpsc_get_customer_cart( $id = false ) {
-	global $wpsc_cart;
-
-	if ( ! empty( $wpsc_cart ) && ( ! $id || $id == wpsc_get_current_customer_id() ) )
-		return $wpsc_cart;
-
-	$cart = maybe_unserialize( base64_decode( wpsc_get_customer_meta( 'cart', $id ) ) );
-	if ( empty( $cart ) || ! $cart instanceof wpsc_cart )
-		$cart = new wpsc_cart();
-
-	return $cart;
-}
-
-function wpsc_update_customer_cart( $cart, $id = false ) {
-	if ( ! $id || $id == wpsc_get_current_customer_id() )
-		return wpsc_serialize_shopping_cart();
-
-	return wpsc_update_customer_meta( 'cart', base64_encode( serialize( $wpsc_cart ) ), $id );
-}
-
 /**
  * Delete all customer meta for a certain customer ID.
  *
@@ -32,22 +12,19 @@ function wpsc_update_customer_cart( $cart, $id = false ) {
 function wpsc_delete_all_customer_meta( $id = false ) {
 	global $wpdb;
 
-	if ( ! $id )
+	if ( ! $id ) {
 		$id = wpsc_get_current_customer_id();
+	}
 
 	$result = apply_filters( 'wpsc_delete_all_customer_meta', null, $id );
 
-	if ( $result )
+	if ( $result ) {
 		return $result;
-
-	$meta = get_user_meta( $id );
-	$blog_prefix = is_multisite() ? $wpdb->get_blog_prefix() : '';
-	$key_pattern = "{$blog_prefix}_wpsc_";
-	$success = true;
+	}
 
 	foreach ( $meta as $key => $value ) {
 		if ( strpos( $key, $key_pattern ) === 0 )
-			$success = $success && delete_user_meta( $id, $key );
+			$success = $success && wpsc_delete_visitor_meta( $id, $key );
 	}
 
 	return $success;
@@ -66,15 +43,17 @@ function wpsc_delete_all_customer_meta( $id = false ) {
  *                          if there are any errors.
  */
 function wpsc_delete_customer_meta( $key, $id = false ) {
-	if ( ! $id )
+	if ( ! $id ) {
 		$id = wpsc_get_current_customer_id();
+	}
 
 	$result = apply_filters( 'wpsc_delete_customer_meta', null, $key, $id );
 
-	if ( $result )
+	if ( $result ) {
 		return $result;
+	}
 
-	return delete_user_meta( $id, _wpsc_get_customer_meta_key( $key ) );
+	return wpsc_delete_visitor_meta( $id, $key );
 }
 
 /**
@@ -91,15 +70,18 @@ function wpsc_delete_customer_meta( $key, $id = false ) {
  *                           if there are any errors.
  */
 function wpsc_update_customer_meta( $key, $value, $id = false ) {
-	if ( ! $id )
+
+	if ( ! $id ) {
 		$id = wpsc_get_current_customer_id();
+	}
 
 	$result = apply_filters( 'wpsc_update_customer_meta', null, $key, $value, $id );
 
-	if ( $result )
+	if ( $result ) {
 		return $result;
+	}
 
-	return update_user_meta( $id, _wpsc_get_customer_meta_key( $key ), $value );
+	return wpsc_update_visitor_meta( $id, $key, $value );
 }
 
 /**
@@ -115,22 +97,25 @@ function wpsc_update_customer_meta( $key, $value, $id = false ) {
  *                             if otherwise.
  */
 function wpsc_update_all_customer_meta( $profile, $id = false ) {
-	if ( ! $id )
+
+	if ( ! $id ) {
 		$id = wpsc_get_current_customer_id();
+	}
 
 	$result = apply_filters( 'wpsc_update_all_customer_meta', null, $profile, $id );
 
-	if ( $result )
+	if ( $result ) {
 		return $result;
-
-	wpsc_delete_all_customer_meta( $id );
-	$success = true;
-
-	foreach ( $profile as $key => $value ) {
-		$success = $success && wpsc_update_customer_meta( $key, $value, $id );
 	}
 
-	return $success;
+	wpsc_delete_all_customer_meta( $id );
+	$result = true;
+
+	foreach ( $profile as $key => $value ) {
+		$result = $result && wpsc_update_customer_meta( $key, $value, $id );
+	}
+
+	return $result;
 }
 
 /**
@@ -146,15 +131,18 @@ function wpsc_update_all_customer_meta( $profile, $id = false ) {
  *                         customer ID is invalid.
  */
 function wpsc_get_customer_meta( $key = '', $id = false ) {
-	if ( ! $id )
+
+	if ( ! $id ) {
 		$id = wpsc_get_current_customer_id();
+	}
 
-	$result = apply_filters( 'wpsc_get_customer_meta', null, $key, $id );
+	// a filter to override meta get prior to retrieving the value
+	$meta_value = apply_filters( 'wpsc_get_customer_meta', null, $key, $id );
+	if ( $meta_value ) {
+		return $meta_value;
+	}
 
-	if ( $result )
-		return $result;
-
-	return get_user_meta( $id, _wpsc_get_customer_meta_key( $key ), true );
+	return wpsc_get_visitor_meta( $id, $key, true );
 }
 
 /**
@@ -171,15 +159,17 @@ function wpsc_get_customer_meta( $key = '', $id = false ) {
 function wpsc_get_all_customer_meta( $id = false ) {
 	global $wpdb;
 
-	if ( ! $id )
+	if ( ! $id ) {
 		$id = wpsc_get_current_customer_id();
+	}
 
 	$result = apply_filters( 'wpsc_get_all_customer_meta', null, $id );
 
-	if ( $result )
+	if ( $result ) {
 		return $result;
+	}
 
-	$meta = get_user_meta( $id );
+	$meta        = wpsc_get_visitor_meta( $id );
 	$blog_prefix = is_multisite() ? $wpdb->get_blog_prefix() : '';
 	$key_pattern = "{$blog_prefix}_wpsc_";
 
@@ -195,4 +185,89 @@ function wpsc_get_all_customer_meta( $id = false ) {
 
 	return $return;
 }
+
+
+
+/**
+ * Return an the customer cart
+ *
+ * @access public
+ * @since 3.8.9
+ * @param  mixed $id Customer ID. Default to the current user ID.
+ * @return WP_Error|array Return an array of metadata if no error occurs, WP_Error
+ *                        if otherwise.
+ */
+function wpsc_get_customer_cart( $id = false  ) {
+	global $wpsc_cart;
+
+	if ( ! $id ) {
+		$id = wpsc_get_current_customer_id();
+	}
+
+	// if we are using the current visitors cart then we have a global to use
+	if ( $id == wpsc_get_current_customer_id() ) {
+		if ( empty( $wpsc_cart ) ) {
+			$wpsc_cart = wpsc_get_visitor_cart( $id );
+		}
+
+		return $wpsc_cart;
+	} else {
+		return wpsc_get_visitor_cart( $id );
+	}
+}
+
+
+/**
+ * Update a customers cart
+ * @access public
+ * @since 3.8.14
+ * @param unknown $cart
+ * @param int $id
+ * @return boolean
+ */
+function wpsc_update_customer_cart( $cart, $id = false ) {
+	global $wpdb, $wpsc_start_time, $wpsc_cart;
+
+	if ( ! is_a( $cart, 'wpsc_cart' ) ) {
+		return false;
+	}
+
+	if ( ! $id ) {
+		$id = wpsc_get_current_customer_id();
+	}
+
+	if ( $id == wpsc_get_current_customer_id() ) {
+		$wpsc_cart = $cart;
+	}
+
+	wpsc_update_visitor_cart( $id , $cart );
+
+	return true;
+}
+
+
+/**
+ * Update the customer's last active time
+ *
+ * Last active time is automatically set for certain AJAX transactions (see customer.php) but
+ * can be updated manually for specific  customer id as necessary in admin or plugin logic
+ *
+ * @param string $id     the customer id.
+ * @access public
+ * @since  3.8.13
+ * @return int
+ */
+function wpsc_update_customer_last_active( $id = false ) {
+
+	if ( ! $id ) {
+		$id = wpsc_get_current_customer_id();
+	}
+
+	wpsc_set_visitor_last_active( $id );
+
+	return $id;
+}
+
+
+
 
