@@ -3,12 +3,17 @@ add_action( 'wpsc_hourly_cron_task', 'wpsc_clear_stock_claims' );
 add_action( 'wpsc_hourly_cron_task', '_wpsc_delete_expired_visitors' );
 
 /**
- * wpsc_clear_stock_claims, clears the stock claims, runs using wp-cron and when editing purchase log statuses via the dashboard
+ * Clears the stock claims, runs on hourly WP_Cron event and when editing purchase log statuses.
+ *
+ * @since 3.8.9
+ * @access public
+ *
+ * @return void
  */
 function wpsc_clear_stock_claims() {
 	global $wpdb;
 
-	$time = (float) get_option( 'wpsc_stock_keeping_time', 1 );
+	$time     = (float) get_option( 'wpsc_stock_keeping_time', 1 );
 	$interval = get_option( 'wpsc_stock_keeping_interval', 'day' );
 
 	// we need to convert into seconds because we're allowing decimal intervals like 1.5 days
@@ -24,6 +29,16 @@ function wpsc_clear_stock_claims() {
 	$wpdb->query( $sql );
 }
 
+/**
+ * Purges customer meta that is older than WPSC_CUSTOMER_DATA_EXPIRATION on an hourly WP_Cron event.
+ *
+ * @since 3.8.9.2
+ * @access public
+ *
+ * @return void
+ */
+function _wpsc_clear_customer_meta() {
+	global $wpdb;
 
 /** Start the process that cleans up user profiles
  *
@@ -36,13 +51,26 @@ function wpsc_clear_stock_claims() {
  */
 function _wpsc_delete_expired_visitors() {
 
-	if ( ! defined( 'WPSC_MAX_DELETE_PROFILE_TIME' ) ) {
-		define( 'WPSC_MAX_DELETE_PROFILE_TIME', 20 );
-	}
+	$purge_count = 200;
 
-	if ( ! defined( 'WPSC_MAX_DELETE_MEMORY_USAGE' ) ) {
-		define( 'WPSC_MAX_DELETE_MEMORY_USAGE',  20 * 1024 * 1024 ); // allow up to 20 megabytes to be consumed by the delete processing
-	}
+	$sql = "
+		SELECT user_id
+		FROM {$wpdb->usermeta}
+		WHERE
+		meta_key = '_wpsc_last_active'
+		AND meta_value < UNIX_TIMESTAMP() - " . WPSC_CUSTOMER_DATA_EXPIRATION . "
+		LIMIT {$purge_count}
+	";
+
+	/* Do this in batches of 200 to avoid memory issues when there are too many anonymous users */
+	@set_time_limit( 0 ); // no time limit
+
+	do {
+		$ids = $wpdb->get_col( $sql );
+		foreach ( $ids as $id ) {
+			wp_delete_user( $id );
+		}
+	} while ( count( $ids ) == $purge_count );
 
 	// We are going to record a little option so that support can confirm that the delete users cron is running
 	add_option( '_wpsc_last_delete_expired_visitors_cron', date( 'Y-m-d H:i:s' ), null, 'no' );

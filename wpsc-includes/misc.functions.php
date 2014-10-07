@@ -48,9 +48,16 @@ function wpsc_get_state_by_id( $id, $return_value ) {
 	return $value;
 }
 
-function wpsc_country_has_state( $country_code ){
+function wpsc_get_state_by_name( $name, $return_value ) {
+	global $wpdb;
+	$sql = "SELECT $return_value FROM " . WPSC_TABLE_REGION_TAX . " WHERE name = '$name'";
+	$value = $wpdb->get_var( $sql );
+	return $value;
+}
 
-	$country_data = WPSC_Countries::get_country( $country_code, true ); // TODO this function does not seem to do what it's name indicates? What's up with that.
+function wpsc_country_has_state($country_code){
+	global $wpdb;
+	$country_data = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `".WPSC_TABLE_CURRENCY_LIST."` WHERE `isocode`= %s LIMIT 1", $country_code ), ARRAY_A );
 	return $country_data;
 }
 
